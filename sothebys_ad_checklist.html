@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sotheby's Ad Checklist Dashboard — WDR Aspen</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --gold: #C9A84C;
+    --white: #FFFFFF;
+    --light-gray: #F4F5F7;
+    --mid-gray: #E0E2E7;
+    --dark-gray: #6B7280;
+    --text: #1A1A2E;
+    --border: #D1D5DB;
+    --sidebar-w: 340px;
+    --critical: #991B1B;
+    --critical-bg: #FFF0F0;
+    --critical-border: #FCA5A5;
+    --high: #C2410C;
+    --high-bg: #FFF7ED;
+    --high-border: #FED7AA;
+    --medium: #B45309;
+    --medium-bg: #FFFBEB;
+    --medium-border: #FDE68A;
+    --success: #15803D;
+    --success-bg: #F0FFF4;
+    --success-border: #86EFAC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia','Times New Roman',serif; background: var(--light-gray); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* HEADER */
+  header { background: var(--navy); color: white; padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 3px solid var(--gold); z-index: 100; }
+  .h-left { display: flex; align-items: center; gap: 14px; }
+  .h-logo { font-size: 17px; font-weight: bold; letter-spacing: 2px; color: var(--gold); font-family: Arial,sans-serif; text-transform: uppercase; }
+  .h-div { width: 1px; height: 26px; background: rgba(201,168,76,0.4); }
+  .h-title { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.85); font-family: Arial,sans-serif; }
+  .h-right { display: flex; align-items: center; gap: 8px; }
+  .h-badge { background: var(--gold); color: var(--navy); font-size: 10px; font-weight: bold; padding: 3px 9px; border-radius: 20px; font-family: Arial,sans-serif; }
+  .h-badge.red { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical-border); }
+  .h-sync { font-size: 10px; color: rgba(255,255,255,0.5); font-family: Arial,sans-serif; }
+  .btn-sm { background: transparent; border: 1px solid rgba(201,168,76,0.5); color: var(--gold); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: Arial,sans-serif; transition: all 0.2s; }
+  .btn-sm:hover { background: rgba(201,168,76,0.15); }
+  .btn-sm.loading { opacity: 0.5; cursor: not-allowed; }
+
+  /* LAYOUT */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-w); background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sb-top { padding: 12px; border-bottom: 1px solid var(--border); }
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-wrap span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 13px; }
+  .search-input { width: 100%; padding: 7px 8px 7px 30px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: Arial,sans-serif; outline: none; background: var(--light-gray); transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--gold); background: white; }
+  .filter-row { display: flex; gap: 5px; }
+  .filter-select { flex: 1; padding: 5px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; font-family: Arial,sans-serif; outline: none; background: var(--light-gray); cursor: pointer; }
+  .filter-select:focus { border-color: var(--gold); }
+
+  /* STAT TABS */
+  .stat-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .stat-tab { flex: 1; text-align: center; padding: 6px 2px; font-size: 9px; font-family: Arial,sans-serif; color: var(--dark-gray); text-transform: uppercase; letter-spacing: 0.4px; border-right: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .stat-tab:last-child { border-right: none; }
+  .stat-tab:hover { background: var(--light-gray); }
+  .stat-tab.active { background: var(--navy); color: var(--gold); }
+  .stat-tab strong { display: block; font-size: 15px; line-height: 1.3; font-family: Georgia,serif; }
+  .stat-tab.red strong { color: var(--critical); }
+
+  /* TASK LIST */
+  .task-list { overflow-y: auto; flex: 1; }
+  .task-item { padding: 10px 12px; border-bottom: 1px solid var(--mid-gray); cursor: pointer; transition: background 0.1s; position: relative; border-left: 3px solid transparent; }
+  .task-item:hover { background: #F8F7F0; }
+  .task-item.active { background: #F8F5E8; border-left-color: var(--gold); }
+  .task-item.level-critical { border-left-color: var(--critical); }
+  .task-item.level-high { border-left-color: var(--high); }
+  .task-item.level-medium { border-left-color: var(--medium); }
+  .task-item.level-ok { border-left-color: var(--success); }
+  .ti-name { font-size: 11.5px; font-family: Arial,sans-serif; font-weight: 600; color: var(--text); line-height: 1.35; margin-bottom: 4px; padding-right: 22px; }
+  .ti-badges { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 4px; }
+  .badge { font-size: 9.5px; padding: 1px 6px; border-radius: 3px; font-family: Arial,sans-serif; font-weight: 500; }
+  .b-step { background: #EEF2FF; color: #3730A3; }
+  .b-des { background: #F0FDF4; color: #15803D; }
+  .b-ver { background: #FFF7ED; color: #C2410C; }
+  .b-crit { background: var(--critical-bg); color: var(--critical); font-weight: 700; }
+  .b-high { background: var(--high-bg); color: var(--high); font-weight: 700; }
+  .b-med { background: var(--medium-bg); color: var(--medium); }
+  .b-ok { background: var(--success-bg); color: var(--success); }
+  .b-check { background: var(--success-bg); color: var(--success); }
+  .ti-dl { font-size: 10px; color: var(--dark-gray); font-family: Arial,sans-serif; line-height: 1.5; }
+  .ti-dl .crit { color: var(--critical); font-weight: bold; }
+  .ti-dl .high { color: var(--high); font-weight: 600; }
+  .ti-dl .med { color: var(--medium); }
+  .ti-check { position: absolute; right: 9px; top: 10px; font-size: 14px; color: var(--success); }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dark-gray); font-family: Arial,sans-serif; gap: 10px; opacity: 0.5; }
+  .empty-state .icon { font-size: 44px; }
+  .empty-state h3 { font-size: 15px; color: var(--navy); }
+  .empty-state p { font-size: 12px; text-align: center; max-width: 260px; }
+
+  /* TASK HEADER */
+  .task-header { background: var(--navy); color: white; border-radius: 8px; padding: 18px 22px; border-bottom: 3px solid var(--gold); }
+  .th-pub { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); font-family: Arial,sans-serif; margin-bottom: 5px; }
+  .th-name { font-size: 16px; font-weight: bold; line-height: 1.3; margin-bottom: 12px; }
+  .th-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .th-m { font-family: Arial,sans-serif; }
+  .th-m label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 2px; }
+  .th-m strong { font-size: 12px; color: white; }
+
+  /* DEADLINE GRID */
+  .dl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .dl-card { border-radius: 6px; padding: 10px 12px; font-family: Arial,sans-serif; }
+  .dl-card label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; opacity: 0.8; }
+  .dl-card .dl-date { font-size: 13px; font-weight: bold; }
+  .dl-card .dl-status { font-size: 9px; margin-top: 2px; opacity: 0.85; }
+  .dl-card.d-crit { background: var(--critical-bg); border: 1px solid var(--critical-border); color: var(--critical); }
+  .dl-card.d-high { background: var(--high-bg); border: 1px solid var(--high-border); color: var(--high); }
+  .dl-card.d-med { background: var(--medium-bg); border: 1px solid var(--medium-border); color: var(--medium); }
+  .dl-card.d-ok { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success); }
+  .dl-card.d-none { background: #F3F4F6; border: 1px solid var(--border); color: var(--dark-gray); }
+  .dl-source { font-size: 10px; font-family: Arial,sans-serif; color: rgba(255,255,255,0.55); margin-top: 8px; }
+
+  /* BANNERS */
+  .banner { border-radius: 6px; padding: 11px 15px; font-size: 12px; font-family: Arial,sans-serif; display: flex; align-items: flex-start; gap: 9px; line-height: 1.5; }
+  .banner.crit { background: var(--critical-bg); border: 1px solid var(--critical-border); border-left: 4px solid var(--critical); color: var(--critical); }
+  .banner.high { background: var(--high-bg); border: 1px solid var(--high-border); border-left: 4px solid var(--high); color: var(--high); }
+  .banner.med { background: var(--medium-bg); border: 1px solid var(--medium-border); border-left: 4px solid var(--medium); color: var(--medium); }
+  .banner.ok { background: var(--success-bg); border: 1px solid var(--success-border); border-left: 4px solid var(--success); color: var(--success); }
+  .banner.info { background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #3B82F6; color: #1E40AF; }
+
+  /* ROLE CARD */
+  .card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 15px 18px; }
+  .card h3 { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dark-gray); font-family: Arial,sans-serif; margin-bottom: 10px; }
+  .role-btns { display: flex; gap: 8px; }
+  .role-btn { flex: 1; padding: 11px; border: 2px solid var(--border); border-radius: 6px; background: white; cursor: pointer; text-align: center; transition: all 0.2s; font-family: Arial,sans-serif; }
+  .role-btn:hover { border-color: var(--gold); }
+  .role-btn.active { border-color: var(--navy); background: var(--navy); color: white; }
+  .role-btn .ri { font-size: 20px; display: block; margin-bottom: 3px; }
+  .role-btn .rl { font-size: 13px; font-weight: 600; display: block; }
+  .role-btn .rd { font-size: 10px; color: var(--dark-gray); }
+  .role-btn.active .rd { color: rgba(255,255,255,0.65); }
+
+  /* PROGRESS */
+  .prog-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 13px 18px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 11px; font-family: Arial,sans-serif; margin-bottom: 7px; color: var(--dark-gray); }
+  .prog-label strong { color: var(--navy); font-size: 14px; }
+  .prog-track { background: var(--mid-gray); border-radius: 100px; height: 7px; overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--navy), var(--gold)); border-radius: 100px; transition: width 0.3s; }
+
+  /* CHECKLIST */
+  .cl-card { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .cl-sec-title { padding: 14px 18px 6px; font-size: 10px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 1.4px; font-family: Arial,sans-serif; border-top: 2px solid var(--gold); margin-top: 2px; }
+  .cl-sec-title:first-child { border-top: none; margin-top: 0; }
+  .cl-sec-hd { background: var(--navy); color: white; padding: 9px 18px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-family: Arial,sans-serif; display: flex; align-items: center; gap: 7px; }
+  .sec-dot { background: var(--gold); color: var(--navy); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; flex-shrink: 0; }
+  .sec-prog { margin-left: auto; font-size: 9px; color: rgba(255,255,255,0.65); }
+  .sec-prog.done { color: #86EFAC; }
+  .cl-items { padding: 4px 0; }
+  .cl-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 18px; border-bottom: 1px solid #F3F4F6; cursor: pointer; transition: background 0.1s; }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-item:hover { background: #FAFAFA; }
+  .cl-item.checked { background: #FAFFF8; }
+  .cl-box { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 1px; }
+  .cl-item.checked .cl-box { background: var(--success); border-color: var(--success); }
+  .cl-tick { display: none; }
+  .cl-item.checked .cl-tick { display: block; }
+  .cl-num { font-size: 9px; color: var(--dark-gray); font-family: Arial,sans-serif; width: 16px; flex-shrink: 0; text-align: right; margin-top: 3px; }
+  .cl-txt { flex: 1; }
+  .cl-lbl { font-size: 12.5px; font-family: Arial,sans-serif; line-height: 1.4; color: var(--text); }
+  .cl-note { font-size: 10.5px; color: var(--dark-gray); margin-top: 1px; font-style: italic; }
+  .sec-div { height: 7px; background: var(--light-gray); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+  /* SIGNOFF */
+  .signoff { background: white; border: 2px solid var(--navy); border-radius: 8px; padding: 18px 22px; flex-shrink: 0; }
+  .signoff h3 { font-size: 13px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--navy); font-family: Arial,sans-serif; margin-bottom: 9px; }
+  .ack-text { font-size: 11.5px; font-family: Arial,sans-serif; line-height: 1.7; color: var(--text); background: var(--light-gray); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; margin-bottom: 14px; }
+  .ack-text strong { color: var(--navy); }
+  .sig-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-family: Arial,sans-serif; color: var(--dark-gray); font-weight: 600; }
+  .fg input, .fg select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: Arial,sans-serif; outline: none; transition: border-color 0.2s; }
+  .fg input:focus { border-color: var(--gold); }
+  .fg input.err { border-color: var(--critical); }
+  .submit-btn { width: 100%; padding: 13px; background: var(--navy); color: white; border: none; border-radius: 5px; font-size: 13px; font-family: Arial,sans-serif; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .submit-btn:hover:not(:disabled) { background: #253b5f; }
+  .submit-btn:disabled { background: var(--mid-gray); color: var(--dark-gray); cursor: not-allowed; }
+  .submit-msg { font-size: 10.5px; color: var(--critical); font-family: Arial,sans-serif; text-align: center; margin-top: 6px; min-height: 16px; }
+
+  /* VERSION PROGRESS */
+  .ver-progress { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 13px 18px; }
+  .ver-progress h3 { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dark-gray); font-family: Arial,sans-serif; margin-bottom: 10px; }
+  .ver-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 5px; }
+  .ver-label { font-size: 11px; font-family: Arial,sans-serif; font-weight: 700; color: var(--navy); min-width: 28px; }
+  .rev-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-family: Arial,sans-serif; font-weight: 600; border: 1px solid; }
+  .rev-pill.done { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+  .rev-pill.needed { background: var(--critical-bg); border-color: var(--critical-border); color: var(--critical); }
+  .rev-pill.optional { background: #F3F4F6; border-color: var(--border); color: var(--dark-gray); }
+  .rev-pill.optional.done { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+  .ver-hist { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 9px; }
+  .ver-hist-row { font-size: 10px; font-family: Arial,sans-serif; color: var(--dark-gray); padding: 3px 0; display: flex; gap: 6px; align-items: center; }
+  .ver-hist-row .who { color: var(--navy); font-weight: 600; }
+
+  /* ROLE BTNS — updated for 3 options */
+  .role-btns { display: flex; gap: 8px; }
+  .role-btn .rp { font-size: 9.5px; margin-top: 4px; font-family: Arial,sans-serif; }
+  .role-btn .rp .r-done  { color: var(--success); font-weight: 700; }
+  .role-btn .rp .r-need  { color: var(--critical); font-weight: 700; }
+  .role-btn .rp .r-opt   { color: var(--dark-gray); }
+  .role-btn.complete { border-color: var(--success); }
+  .role-btn.complete .rl { color: var(--success); }
+
+  /* COMMENT LOG */
+  .comment-log { background: white; border: 2px solid var(--navy); border-radius: 8px; padding: 18px 22px; flex-shrink: 0; }
+  .comment-log h3 { font-size: 13px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--navy); font-family: Arial,sans-serif; margin-bottom: 9px; display: flex; align-items: center; gap: 8px; }
+  .comment-log h3 .req { color: var(--critical); font-size: 11px; letter-spacing: 0; text-transform: none; font-style: italic; }
+  .comment-log .cl-instruction { font-size: 11.5px; font-family: Arial,sans-serif; line-height: 1.75; color: var(--text); background: var(--light-gray); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; margin-bottom: 12px; }
+  .comment-log textarea { width: 100%; min-height: 150px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: Arial,sans-serif; resize: vertical; outline: none; line-height: 1.65; transition: border-color 0.2s; color: var(--text); }
+  .comment-log textarea:focus { border-color: var(--gold); }
+  .comment-log textarea.err { border-color: var(--critical); }
+  .comment-log .cl-foot { font-size: 10px; color: var(--dark-gray); font-family: Arial,sans-serif; margin-top: 7px; font-style: italic; }
+
+  /* MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; display: flex; align-items: center; justify-content: center; }
+  .modal-bg.hidden { display: none; }
+  .modal { background: white; border-radius: 10px; width: 460px; max-width: 90vw; padding: 26px 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-logo { font-size: 12px; font-weight: bold; letter-spacing: 2px; color: var(--gold); font-family: Arial,sans-serif; text-transform: uppercase; margin-bottom: 14px; }
+  .modal h2 { font-size: 19px; color: var(--navy); margin-bottom: 7px; }
+  .modal p { font-size: 12px; font-family: Arial,sans-serif; color: var(--dark-gray); margin-bottom: 13px; line-height: 1.6; }
+  .modal input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: Arial,sans-serif; outline: none; margin-bottom: 10px; }
+  .modal input:focus { border-color: var(--gold); }
+  .modal-note { font-size: 10.5px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 4px; padding: 9px 11px; color: #78350F; font-family: Arial,sans-serif; line-height: 1.5; margin-bottom: 12px; }
+  .modal-btn { width: 100%; padding: 11px; background: var(--navy); color: white; border: none; border-radius: 5px; font-size: 13px; font-family: Arial,sans-serif; cursor: pointer; font-weight: 600; }
+  .modal-btn:hover { background: #253b5f; }
+  .modal-skip { margin-top: 8px; text-align: center; font-size: 11px; color: var(--dark-gray); font-family: Arial,sans-serif; cursor: pointer; }
+  .modal-skip:hover { color: var(--navy); text-decoration: underline; }
+  .modal input.field-error { border-color: var(--critical); background: #fff8f8; }
+  .field-error-msg { font-size: 10.5px; color: var(--critical); font-family: Arial,sans-serif; margin: -6px 0 10px 0; display: none; }
+  .field-error-msg.visible { display: block; }
+  .req-star { color: #c0392b; font-weight: 700; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="modal-bg" id="patModal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;">
+    <div class="modal-logo">WDR Aspen</div>
+    <h2>Connect Your Tools</h2>
+    <p style="margin-bottom:6px;">All three connections are required before you can use the checklist. Your tokens are stored locally in your browser only — they are never sent to WDR servers.</p>
+    <div style="display:flex;gap:6px;margin-bottom:18px;">
+      <span style="font-size:11px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:4px;padding:3px 8px;font-family:Arial,sans-serif;">● Asana — live tasks</span>
+      <span style="font-size:11px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:4px;padding:3px 8px;font-family:Arial,sans-serif;">● Airtable — submissions log</span>
+      <span style="font-size:11px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:4px;padding:3px 8px;font-family:Arial,sans-serif;">● Google Sheets — backup log</span>
+    </div>
+
+    <label style="display:block;font-weight:600;font-size:13px;color:#1a2744;margin-bottom:6px;">Asana Personal Access Token <span class="req-star">★ Required</span></label>
+    <div class="modal-note" style="margin-bottom:8px;"><strong>Get your token:</strong> app.asana.com → Profile → My Settings → Apps → Manage Developer Apps → New access token. Name it "WDR Checklist".</div>
+    <input type="password" id="asanaPatInput" placeholder="1/XXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..." />
+    <div class="field-error-msg" id="asanaErr">Asana token is required to load live tasks.</div>
+
+    <label style="display:block;font-weight:600;font-size:13px;color:#1a2744;margin-bottom:6px;margin-top:8px;">Airtable Personal Access Token <span class="req-star">★ Required</span></label>
+    <div class="modal-note" style="margin-bottom:8px;"><strong>Get your token:</strong> airtable.com/create/tokens → Create token → Name it "WDR Checklist" → Scope: <em>data.records:read</em> and <em>data.records:write</em> on base <em>Master sheet</em>.</div>
+    <input type="password" id="patInput" placeholder="patXXXXXXXXXXXXXX.XXXXXX..." />
+    <div class="field-error-msg" id="airtableErr">Airtable token is required to save and share submissions.</div>
+
+    <label style="display:block;font-weight:600;font-size:13px;color:#1a2744;margin-bottom:6px;margin-top:8px;">Google Sheets Webhook URL <span class="req-star">★ Required</span></label>
+    <div class="modal-note" style="margin-bottom:8px;"><strong>Set up once:</strong> Go to <em>script.google.com</em> → New project → paste the WDR webhook script → Deploy as web app → copy the URL here. <a href="#" onclick="showSheetsScript();return false;" style="color:#1a2744;">Show me the script ›</a></div>
+    <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/..." />
+    <div class="field-error-msg" id="sheetsErr">Google Sheets webhook URL is required as a backup submissions log.</div>
+
+    <button class="modal-btn" onclick="savePAT()" style="margin-top:14px;">Save &amp; Connect</button>
+    <p style="font-size:10px;color:#aaa;text-align:center;margin-top:10px;font-family:Arial,sans-serif;">All three fields must be completed. Contact Anna if you need help getting your tokens.</p>
+  </div>
+</div>
+
+<div class="modal-bg" id="sheetsScriptModal" style="display:none;z-index:1100;">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-logo">WDR Aspen</div>
+    <h2>Google Sheets Webhook Script</h2>
+    <p style="margin-bottom:12px;">Copy this script, paste it into <strong>script.google.com</strong>, then deploy as a web app (access: Anyone).</p>
+    <textarea readonly style="width:100%;height:220px;font-size:11px;font-family:monospace;border:1px solid #ccc;border-radius:6px;padding:10px;background:#f8f8f8;resize:none;" onclick="this.select()">function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Checklist_Submissions') || ss.insertSheet('Checklist_Submissions');
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(Object.keys(data));
+    }
+    sheet.appendRow(Object.values(data));
+    return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error',message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}</textarea>
+    <p style="font-size:12px;color:#666;margin-top:10px;">After deploying, go to <strong>Deploy → Manage deployments → copy Web app URL</strong> and paste it in Settings.</p>
+    <button class="modal-btn" style="margin-top:12px;" onclick="document.getElementById('sheetsScriptModal').style.display='none'">Close</button>
+  </div>
+</div>
+
+<header>
+  <div class="h-left">
+    <div class="h-logo">WDR</div>
+    <div class="h-div"></div>
+    <div class="h-title">Sotheby's Ad Checklist</div>
+  </div>
+  <div class="h-right">
+    <span class="h-sync" id="syncTime"></span>
+    <span class="h-badge red" id="alertCount" style="display:none"></span>
+    <span class="h-badge" id="taskCount">— tasks</span>
+    <span class="h-badge red" id="pendingBadge" style="display:none;cursor:pointer;" onclick="syncPending()" title="Unsynced submissions — click to retry"></span>
+    <button class="btn-sm" id="refreshBtn" onclick="refreshData()">↻ Refresh</button>
+    <button class="btn-sm" id="exportBtn" onclick="handleExport()" title="Download all submissions as CSV">⬇ Export</button>
+    <button class="btn-sm" onclick="openSettings()">⚙</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="search-wrap">
+        <span>🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search name, broker, publication..." oninput="filterTasks()" />
+      </div>
+      <div class="filter-row">
+        <select class="filter-select" id="filterStep" onchange="filterTasks()">
+          <option value="">All Steps</option>
+          <option value="account manager">Account Manager</option>
+          <option value="agent">Agent Approval</option>
+          <option value="designer">Designer</option>
+          <option value="internal">Internal Review</option>
+          <option value="marketing">Marketing</option>
+          <option value="qa">QA</option>
+          <option value="magazine">Magazine</option>
+          <option value="1000">Step 1000</option>
+        </select>
+        <select class="filter-select" id="filterDes" onchange="filterTasks()">
+          <option value="">All Designers</option>
+          <option value="Dale">Dale</option>
+          <option value="Dylan">Dylan</option>
+          <option value="Zuks">Zuks</option>
+          <option value="Dillon">Dillon</option>
+        </select>
+      </div>
+    </div>
+    <div class="stat-tabs">
+      <div class="stat-tab active" id="st-all" onclick="setStatFilter('all')"><strong id="cn-all">—</strong>All</div>
+      <div class="stat-tab red" id="st-crit" onclick="setStatFilter('critical')"><strong id="cn-crit">—</strong>🚨 Missed</div>
+      <div class="stat-tab" id="st-urg" onclick="setStatFilter('urgent')"><strong id="cn-urg">—</strong>⚡ Urgent</div>
+      <div class="stat-tab" id="st-done" onclick="setStatFilter('done')"><strong id="cn-done">—</strong>✓ Done</div>
+    </div>
+    <div class="task-list" id="taskList"></div>
+  </aside>
+
+  <main class="content" id="contentArea">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <h3>Select a task to begin</h3>
+      <p>Choose an ad from the left to complete the quality checklist before approving or submitting.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const AIRTABLE_BASE    = 'appY1lOOXx42Q5BjM';
+const TASKS_TABLE      = 'tbljo1o9rdFOsigiH';
+const SUBMISSIONS_TABLE= 'tblsML7VgILJmlOTH';
+
+// Asana — Sotheby's Company | Client Board
+const ASANA_PROJECT_GID = '1210209525333853';
+const ASANA_CF_STATUS   = '1207840701623568'; // NEW Status (Design)
+const ASANA_CF_DESIGNER = '1206436946501229'; // Assigned Designer
+const ASANA_CF_OWNER    = '1205761653034189'; // Task owner
+
+// ═══════════════════════════════════════════════
+// DEADLINE ENGINE
+// ═══════════════════════════════════════════════
+function parsePublicationDate(name) {
+  const m = name.match(/^(\d{2})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  // Format: MM-DD-YY
+  return new Date(2000 + parseInt(m[3]), parseInt(m[1]) - 1, parseInt(m[2]));
+}
+
+function subtractWorkingDays(d, n) {
+  const r = new Date(d);
+  while (n > 0) {
+    r.setDate(r.getDate() - 1);
+    if (r.getDay() !== 0 && r.getDay() !== 6) n--;
+  }
+  return r;
+}
+
+function subtractCalDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate() - n); return r;
+}
+
+function computeDeadlines(task) {
+  const name = (task.name || '').toLowerCase();
+  let runDate = null;
+  let source = null;
+
+  if (name.includes('airport')) {
+    const isVideo = name.includes('video');
+    runDate  = isVideo ? new Date('2026-06-01') : new Date('2026-05-22');
+    source   = isVideo ? 'Airport Video (Jun 1)' : 'Airport Stats/Brochure (May 22)';
+  } else {
+    runDate = parsePublicationDate(task.name || '');
+    if (runDate) source = 'Print: run date from task name';
+  }
+
+  if (!runDate) return null;
+
+  return {
+    runDate,
+    source,
+    submission : subtractCalDays(runDate, 2),
+    pageproof  : subtractCalDays(runDate, 3),
+    designer   : subtractWorkingDays(runDate, 8),
+    briefing   : subtractWorkingDays(runDate, 10),
+  };
+}
+
+// ═══════════════════════════════════════════════
+// DEADLINE STATUS
+// ═══════════════════════════════════════════════
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+function dayDiff(d) {
+  const t = new Date(d); t.setHours(0,0,0,0);
+  return Math.floor((t - TODAY) / 86400000);
+}
+
+function dlClass(d) {
+  if (!d) return 'none';
+  const diff = dayDiff(d);
+  if (diff < 0)  return 'crit';   // missed
+  if (diff <= 1) return 'crit';   // today or tomorrow → critical
+  if (diff <= 3) return 'high';   // within 3 days
+  if (diff <= 7) return 'med';    // within a week
+  return 'ok';
+}
+
+function dlLabel(d) {
+  if (!d) return '—';
+  const diff = dayDiff(d);
+  if (diff < 0)  return `MISSED (${Math.abs(diff)}d ago)`;
+  if (diff === 0) return 'TODAY';
+  if (diff === 1) return 'TOMORROW';
+  return fmtDate(d);
+}
+
+function dlStatus(d, label) {
+  if (!d) return '';
+  const diff = dayDiff(d);
+  if (diff < 0)  return `${label} overdue by ${Math.abs(diff)} day${Math.abs(diff)>1?'s':''}`;
+  if (diff === 0) return `${label} is TODAY`;
+  if (diff === 1) return `${label} is TOMORROW`;
+  if (diff <= 3)  return `${label} in ${diff} days`;
+  return '';
+}
+
+// ═══════════════════════════════════════════════
+// STATE-AWARE DEADLINE EVALUATION
+// Anna's rules:
+//  1. Task is in PageProof → brief, designer AND pageproof deadlines were MET (never confirm missed)
+//  2. Not at Step 1000 / not submitted → submission CONFIRMED missed
+//
+// "In PageProof" is the single source of truth for confirming proof existence.
+// It is true when: the proofCreated field is populated, the Asana step name
+// indicates a PageProof workflow stage, OR the task is sourced from Active_Tasks
+// (synced exclusively from "In PageProof" Asana sections).
+// The proofCreated field may not always sync reliably — isInPageProof is the
+// authoritative check and takes precedence over proofExists alone.
+// ═══════════════════════════════════════════════
+function getDeadlineStates(task) {
+  const dl = task._dl;
+  if (!dl) return null;
+
+  const proofExists  = !!(task.proofCreated && String(task.proofCreated).trim());
+  const step         = (task.step || '').toLowerCase();
+  const isSubmitted  = step.includes('1000') || step.includes('submission') || step.includes('lovely');
+
+  // isInPageProof: the authoritative signal that a proof exists and the task is
+  // actively in the PageProof review workflow. Covers cases where proofCreated
+  // wasn't synced from Asana but the task is clearly in PageProof (e.g. it appears
+  // in the "In PageProof" Asana section, which is the source of all Active_Tasks).
+  const isInPageProof = proofExists
+    || step.includes('pageproof')
+    || step.includes('proof')
+    || step.includes('client review')
+    || step.includes('agent review')
+    || step.includes('agent approval')
+    || /step\s*\d/.test(step)      // e.g. "Step 100", "Step 500", "Step 1000"
+    || dataSource === 'airtable';  // all Airtable-sourced tasks are from "In PageProof" sections
+
+  const pastDesigner = dayDiff(dl.designer)  < 0;
+  const pastProof    = dayDiff(dl.pageproof) < 0;
+  const pastSubmit   = dayDiff(dl.submission)< 0;
+
+  return {
+    briefing: {
+      d: dl.briefing,
+      confirmed: !isInPageProof && pastDesigner,
+      reason: isInPageProof
+        ? 'Task is in PageProof — briefing deadline was met'
+        : 'No proof uploaded and task not in PageProof by the designer deadline',
+    },
+    designer: {
+      d: dl.designer,
+      confirmed: !isInPageProof && pastDesigner,
+      reason: isInPageProof
+        ? 'Task is in PageProof — designer deadline was met'
+        : 'No proof in PageProof — designer deadline not met',
+    },
+    pageproof: {
+      d: dl.pageproof,
+      // isInPageProof is used here (not proofExists alone) because the proofCreated
+      // field may not sync reliably from Asana. A task in PageProof has a proof by
+      // definition — the pageproof deadline is therefore not confirmed missed.
+      confirmed: !isInPageProof && pastProof,
+      reason: isInPageProof
+        ? 'Task is in PageProof — proof exists'
+        : 'No proof linked to this task by the PageProof deadline',
+    },
+    submission: {
+      d: dl.submission,
+      confirmed: !isSubmitted && pastSubmit,
+      reason: 'Task not moved to Step 1000 / not submitted to Lovely by COB',
+    },
+    proofExists,
+    isSubmitted,
+    isInPageProof,
+  };
+}
+
+function taskAlertLevel(task) {
+  const dl = task._dl;
+  if (!dl) {
+    return hasCompletedChecklist(task) ? 'done' : 'none';
+  }
+  // Confirmed missed (state-aware) takes priority
+  const states = getDeadlineStates(task);
+  if (states.briefing.confirmed || states.designer.confirmed ||
+      states.pageproof.confirmed || states.submission.confirmed) return 'critical';
+  // Fall back to date-based
+  const classes = [dl.submission, dl.pageproof, dl.designer, dl.briefing].map(dlClass);
+  if (classes.includes('crit')) return 'critical';
+  if (classes.includes('high')) return 'high';
+  if (classes.includes('med'))  return 'medium';
+  return 'ok';
+}
+
+// ═══════════════════════════════════════════════
+// FALLBACK HARDCODED TASKS
+// ═══════════════════════════════════════════════
+const HARDCODED_TASKS = [{"gid":"1214740067586643","name":"05-15-26- Aspen Times - 1/4 Page Horizontal - Sotheby's 10 x 3.42- 6  x 3.5- Sotheby's - Craig Morris -","designer":"Dale","owner":"Charlene Willson","step":"Agent Approval","version":"","pub":"Aspen Times","adType":"Property focus","broker":"Craig Morris","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""},{"gid":"1214718163787659","name":"05-15-26- Aspen Daily News - Sticky Anchor - 1 - Sotheby's 1140 x 90, 728 x 90, 320 x 50- - Sotheby's - The Midland Residences -","designer":"Dylan","owner":"Ju Latiff","step":"Account Manager","version":"1","pub":"Aspen Daily News","adType":"Pick Up","broker":"The Midlands Residences","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T15:56:17.000Z","totalComments":"","todos":""},{"gid":"1214370630066707","name":"05-19-26- Aspen Daily News - Back Page - SC 10 x 14- 6 x 14- Sotheby's Company - - Listing","designer":"Dale","owner":"Ju Latiff","step":"Account Manager","version":"","pub":"Aspen Daily News","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""},{"gid":"1214369976291785","name":"05-19-26- Aspen Daily News - Front Page - Sotheby's 10 x 2- 6 x 2- Sotheby's - Laurie Laing  -","designer":"Dylan","owner":"Ju Latiff","step":"Account Manager","version":"1","pub":"Aspen Daily News","adType":"Pick Up","broker":"Laurie Laing","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T15:15:58.000Z","totalComments":"","todos":""},{"gid":"1214382471842283","name":"Sotheby's | Summer 2026 Airport  | VIDEO | The Midland Residences","designer":"Zuks","owner":"Ju Latiff","step":"Internal review","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T14:37:26.000Z","totalComments":"0","todos":"0"},{"gid":"1214617777636914","name":"06-16-26- Aspen Times - Food and Wine - 1/4 Page 4.66 x 6.3- - Sotheby's - Karen Peirson","designer":"Dale","owner":"Charlene Willson","step":"Agent Approval","version":"","pub":"Aspen Times","adType":"Brand Selling","broker":"Karen Peirson","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""},{"gid":"1214370626388504","name":"05-17-26- Aspen Times - Back Page - Sotheby's 10 x 14- 6 x 14- Sotheby's Company - - Listing","designer":"Dale","owner":"Ju Latiff","step":"Account Manager","version":"2","pub":"Aspen Times","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T17:27:57.000Z","totalComments":"0","todos":"0"},{"gid":"1214269481156149","name":"05-21-26- Aspen Times - Sticky Anchor HPTO - Sotheby's 970 x 90 , 728 x 90, 320 x 100, 320 x 50, 640 x 200 , 640 x 100, 1456 x 180, 1940 x 180- - Sotheby's Company - - Brand Ad","designer":"Dylan","owner":"Ju Latiff","step":"Account Manager","version":"1","pub":"Aspen Times","adType":"Brand Selling","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T18:49:12.000Z","totalComments":"","todos":""},{"gid":"1213897737891923","name":"07-01-26- Aspen Music Festival -  Full page (Bleeds: 0.125) 8.375 × 10.875- - Sotheby's - Sally Shiekman -","designer":"Dylan","owner":"Charlene Willson","step":"Designer double check","version":"2","pub":"","adType":"Property focus","broker":"Sally Shiekman","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T15:34:49.000Z","totalComments":"0","todos":"0"},{"gid":"1214425508595188","name":"Sotheby's | Summer 2026 Airport | S15 Left-Becky Dombrowski","designer":"Dale","owner":"Ju Latiff","step":"Designer review","version":"4","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T18:00:12.000Z","totalComments":"0","todos":"0"},{"gid":"1214178070556653","name":"05-22-26- Aspen Daily News - Front Page - Sotheby's 10 x 2- 6 x 2- Sotheby's - Soffia Wardy -","designer":"Dale","owner":"Charlene Willson","step":"Account Manager","version":"","pub":"Aspen Daily News","adType":"Brand Selling","broker":"Soffia Wardy","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""},{"gid":"1214206720566450","name":"05-21-26- Aspen Daily News - Back Page - Sotheby's 10 x 14- 6 x 14- Sotheby's - Lex Tarumianz -","designer":"Dale","owner":"Charlene Willson","step":"Agent Approval","version":"1","pub":"Aspen Daily News","adType":"Property focus","broker":"Lex Tarumianz","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T15:35:01.000Z","totalComments":"1","todos":"1"},{"gid":"1214370648943678","name":"05-18-26- Aspen Times - Full Page - Sotheby's 10 x 14- 6 x 14- Sotheby's Company - Pg 13- Listing","designer":"Dale","owner":"Ju Latiff","step":"Account Manager","version":"2","pub":"Aspen Times","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T18:41:11.000Z","totalComments":"0","todos":"0"},{"gid":"1214361091875636","name":"Soffia Wardy - Summer 2026 - Recipe - Peach and Blackberry Pavlova -  Editorial","designer":"Dylan","owner":"Charlene Willson","step":"Magazine team review","version":"1","pub":"","adType":"","broker":"Soffia Wardy","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T14:58:48.000Z","totalComments":"","todos":""},{"gid":"1214360522553782","name":"Soffia Wardy - Summer 2026 - Recipe - Pork Rib Roast -  Editorial","designer":"Dylan","owner":"Charlene Willson","step":"Magazine team review","version":"1","pub":"","adType":"","broker":"Soffia Wardy","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T10:22:49.000Z","totalComments":"","todos":""},{"gid":"1214261703644763","name":"05-18-26- Aspen Times - Standard Slot HPTO - Sotheby's 300 x 250, 728 x 90, 320 x 50, 600 x 500, 640 x 100, 1456 x 180- - Sotheby's - Garrett Reuss -","designer":"Dylan","owner":"Ju Latiff","step":"Agent Approval","version":"1","pub":"Aspen Times","adType":"Pick Up","broker":"Garrett Reuss","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T08:34:56.000Z","totalComments":"","todos":""},{"gid":"1213820470204553","name":"SOTHEBYS | March 2026 Shoot - SOFFIA WARDY SOCIAL 2","designer":"Zuks","owner":"Cathleen Mostert","step":"QA Review","version":"3","pub":"","adType":"","broker":"","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-07T21:24:45.000Z","totalComments":"0","todos":"0"},{"gid":"1214544377468018","name":"Sotheby's | Summer 2026 Airport | Chris Klug | Baggage Display Frame S28","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"4","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T13:42:58.000Z","totalComments":"8","todos":"8"},{"gid":"1214542883385146","name":"Sotheby's | Summer 2026 Airport | The Shea Team | S26 Baggage Display Frame","designer":"Dale","owner":"Ju Latiff","step":"Designer review","version":"5","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T17:33:10.000Z","totalComments":"0","todos":"0"},{"gid":"1214362224208770","name":"Soffia Wardy - Summer 2026 - Recipe - Roasted Seasonal Veggies - Editorial","designer":"Dylan","owner":"Charlene Willson","step":"Magazine team review","version":"1","pub":"","adType":"","broker":"Soffia Wardy","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-07T17:41:14.000Z","totalComments":"3","todos":"3"},{"gid":"1214157652469529","name":"05-15-26- Glenwood Post Independent - Back Page - Sotheby's 10 x 14- 6 x 14- Sotheby's Company - - Listing","designer":"Dale","owner":"Ju Latiff","step":"Step 1000","version":"1","pub":"Glenwood Post Independent","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-07T16:49:52.000Z","totalComments":"0","todos":""},{"gid":"1214361088259827","name":"Soffia Wardy - Summer 2026 - Feature Article - Where Summer Lives Outdoors - Editorial","designer":"Dylan","owner":"Charlene Willson","step":"Magazine team review","version":"3","pub":"","adType":"Brand Selling","broker":"Soffia Wardy","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T07:39:23.000Z","totalComments":"0","todos":"0"},{"gid":"1214312780735787","name":"Sotheby's | Summer 2026 Airport  | VIDEO | The Burggraf's ","designer":"Zuks","owner":"Ju Latiff","step":"Internal review","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-06T19:33:41.000Z","totalComments":"2","todos":"2"},{"gid":"1214157390515170","name":"05-15-26- Aspen Daily News - Back Page - SC 10 x 14- 6 x 14- Sotheby's Company - - Listing","designer":"Dylan","owner":"Ju Latiff","step":"Step 1000","version":"2","pub":"Aspen Daily News","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T19:26:48.000Z","totalComments":"1","todos":"0"},{"gid":"1214370368428860","name":"05-16-26- Aspen Daily News - Full Page [Pg 2] - SC 10 x 14- 6 x 14- Sotheby's Company - - Rental","designer":"Dale","owner":"Ju Latiff","step":"Marketing Rental Approval","version":"2","pub":"Aspen Daily News","adType":"Rental listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T14:30:23.000Z","totalComments":"0","todos":"0"},{"gid":"1214370366276317","name":"05-16-26- Aspen Daily News - Front Page - Sotheby's 10 x 2- 6 x 2- Sotheby's - The Shea Team -","designer":"Dale","owner":"Charlene Willson","step":"Agent Approval","version":"","pub":"Aspen Daily News","adType":"Property focus","broker":"The Shea Team","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""},{"gid":"1214171751444737","name":"05-14-26- Aspen Times - Full Page - Sotheby's 10 x 14- 6 x 14- Sotheby's Company - Pg 13- Listing","designer":"Dylan","owner":"Ju Latiff","step":"Step 1000","version":"2","pub":"Aspen Times","adType":"Property listing","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T19:15:25.000Z","totalComments":"1","todos":"0"},{"gid":"1214501047175428","name":"Sotheby's | Chris Klug April 2026 Market Snapshot","designer":"Dylan","owner":"Charlene Willson","step":"Marketing Approval","version":"5","pub":"","adType":"","broker":"Chris Klug","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-07T16:39:26.000Z","totalComments":"0","todos":"0"},{"gid":"1214544377468009","name":"Sotheby's | Summer 2026 Airport | Chris Klug | Baggage Wall S22 Right","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"6","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T13:46:40.000Z","totalComments":"0","todos":"0"},{"gid":"1214434140451803","name":"Sotheby's | Summer 2026 Airport | The Burggraf Group | S22 Brochure","designer":"Dylan","owner":"Charlene Willson","step":"Marketing Approval","version":"5","pub":"","adType":"Property focus","broker":"The Burggraf Group","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T16:16:51.000Z","totalComments":"2","todos":"1"},{"gid":"1214382591862591","name":"Sotheby's | Summer 2026 Airport |  Terry & Greg | Lounge 3 S15 Right","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-05T12:54:09.000Z","totalComments":"1","todos":"0"},{"gid":"1214382472398277","name":"Sotheby's | Summer 2026 Airport |  Terry & Greg | S27","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-04T17:02:44.000Z","totalComments":"1","todos":"0"},{"gid":"1214382471842272","name":"Sotheby's | Summer 2026 Airport  | VIDEO | Lex Tarumianz | 256 Twining Flats","designer":"Zuks","owner":"Ju Latiff","step":"Internal review","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-04T16:06:58.000Z","totalComments":"","todos":""},{"gid":"1214269371473345","name":"05-23-26- Aspen Times - Sticky Anchor HPTO","designer":"Dylan","owner":"Ju Latiff","step":"Account Manager","version":"2","pub":"Aspen Times","adType":"Brand Rental","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-12T08:14:45.000Z","totalComments":"0","todos":"0"},{"gid":"1214269908155400","name":"05-29-26- Aspen Daily News - Impact Ad","designer":"Dale","owner":"Ju Latiff","step":"Step 1000","version":"2","pub":"Aspen Daily News","adType":"Brand Rental","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-05T12:48:54.000Z","totalComments":"0","todos":"0"},{"gid":"1214430490458473","name":"CORPORATE weekly listing printouts","designer":"Dale","owner":"Charlene Willson","step":"Approver","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-30T16:54:25.000Z","totalComments":"0","todos":"0"},{"gid":"1214706403633087","name":"RENTAL weekly listing catalog","designer":"Dylan","owner":"Charlene Willson","step":"Approver","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-30T15:24:46.000Z","totalComments":"0","todos":"0"},{"gid":"1214382591862584","name":"Sotheby's | Summer 2026 Airport | Caroline Sogard | S5","designer":"Dale","owner":"Ju Latiff","step":"Internal review","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T21:49:39.000Z","totalComments":"1","todos":"1"},{"gid":"1213822553089337","name":"Sotheby's | March 2026 Shoot - Fran Hogan: 30-Second Commercial","designer":"Zuks","owner":"Ju Latiff","step":"QA","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-28T22:02:47.000Z","totalComments":"1","todos":"1"},{"gid":"1213825211556970","name":"Sotheby's | March 2026 Shoot The Shea Team | Open House 1 30\" Commercial","designer":"Zuks","owner":"Charlene Willson","step":"Account Manager","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-28T20:23:57.000Z","totalComments":"1","todos":"1"},{"gid":"1214205956089339","name":"05-14-26- Aspen Daily News - Back Page - Sotheby's 10 x 14- 6 x 14- Sotheby's - Lex Tarumianz -","designer":"Dale","owner":"Charlene Willson","step":"Marketing Approval","version":"2","pub":"Aspen Daily News","adType":"Property focus","broker":"Lex Tarumianz","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-30T21:42:06.000Z","totalComments":"0","todos":"0"},{"gid":"1214272452266942","name":"Sotheby's | Summer 2026 Airport | The Burggraf's | Baggage Wall S22 Left","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"6","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-07T20:34:48.000Z","totalComments":"0","todos":"0"},{"gid":"1214268923878554","name":"Sotheby's | Summer 2026 Airport | The Midland Residences | S10 Left","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"7","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-11T14:56:32.000Z","totalComments":"0","todos":"0"},{"gid":"1214268923878550","name":"Sotheby's | Summer 2026 Airport | Lex Tarumianz | S10 Right","designer":"Dale","owner":"Ju Latiff","step":"Agent approval","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-06T19:05:07.000Z","totalComments":"1","todos":"1"},{"gid":"1214272433015256","name":"Sotheby's | Burggraf Summer In Aspen & Snowmass Magazine | Full Page","designer":"Dale","owner":"Charlene Willson","step":"Marketing Approval","version":"5","pub":"","adType":"Property focus","broker":"The Burggraf Group","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-05-01T21:09:40.000Z","totalComments":"0","todos":"0"},{"gid":"1214154482985900","name":"Aspen Luxury Insider: Home Edition - Summer 2026 - Cover - WDR","designer":"Dylan","owner":"Leslie Williamson","step":"Account Manager Approval","version":"2","pub":"","adType":"","broker":"","corpBroker":"","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-28T09:31:42.000Z","totalComments":"0","todos":"0"},{"gid":"1212677037845304","name":"Sotheby's | Agent 2026 Strategy Showreel SEO","designer":"Zuks","owner":"Charlene Willson","step":"Account Manager","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"🧩 Assigned - Not started","proofCreated":"2026-03-25T21:49:51.000Z","totalComments":"4","todos":"4"},{"gid":"1213887224618358","name":"Sotheby's | March 2026 Shoot - Terry Harrington: 30-Second Commercial","designer":"Dillon","owner":"Ju Latiff","step":"Account Manager","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-22T14:57:23.000Z","totalComments":"","todos":""},{"gid":"1213887809237821","name":"Sotheby's | March 2026 Shoot - Lane & Scott 30-Second Commercial","designer":"Dillon","owner":"Ju Latiff","step":"Account Manager","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-20T19:07:09.000Z","totalComments":"3","todos":"3"},{"gid":"1214045327246684","name":"Sotheby's | Market Report 2026 | Entire Report","designer":"Dylan","owner":"Anna Taylor","step":"Step 1000","version":"9","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"","status":"🗳️ Ready to submit","proofCreated":"2026-04-16T22:46:45.000Z","totalComments":"0","todos":"0"},{"gid":"1213887466017232","name":"Sotheby's | March 2026 Shoot - Mark & Chantal 30-Second Commercial","designer":"Dillon","owner":"Ju Latiff","step":"QA","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-15T18:51:10.000Z","totalComments":"","todos":""},{"gid":"1213887807990892","name":"Sotheby's | March 2026 Shoot - Julie Mandt 30-Second Commercial","designer":"Zuks","owner":"Ju Latiff","step":"QA","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-14T18:28:13.000Z","totalComments":"1","todos":"1"},{"gid":"1213824843436704","name":"Sotheby's | March 2026 Shoot - Etta & Ian McLendon 30-Second Commercial","designer":"Dillon","owner":"Ju Latiff","step":"QA","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-14T18:14:59.000Z","totalComments":"","todos":""},{"gid":"1213887546748218","name":"Sotheby's | March 2026 Shoot - Ashley Feddersen 30-Second Commercial","designer":"Zuks","owner":"Ju Latiff","step":"Designer double check","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-14T18:28:13.000Z","totalComments":"","todos":""},{"gid":"1213774766738351","name":"Sotheby's | March 2026 Shoot - The Shea Team: 30-Second Commercial","designer":"Zuks","owner":"Anna Taylor","step":"Account Manager","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-10T15:43:54.000Z","totalComments":"1","todos":"0"},{"gid":"1213795462514698","name":"Sotheby's | March 2026 Shoot - Soffia Wardy 30-Second Commercial","designer":"Zuks","owner":"Anna Taylor","step":"Account Manager","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-10T14:42:55.000Z","totalComments":"1","todos":"0"},{"gid":"1213747999488472","name":"Sotheby's | March 2026 Shoot - Chris Klug 30 Second Commercial","designer":"Zuks","owner":"Anna Taylor","step":"Marketing Approval","version":"2","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-09T22:20:52.000Z","totalComments":"0","todos":"0"},{"gid":"1213824682788998","name":"Sotheby's | March 2026 Shoot - Sally Shiekman 30-Second Commercial","designer":"Zuks","owner":"Ju Latiff","step":"QA","version":"1","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-09T16:36:25.000Z","totalComments":"4","todos":"3"},{"gid":"1213747652639408","name":"Sotheby's | March 2026 Shoot - Andrew Ernemann: 30-Second Commercial","designer":"Dillon","owner":"Anna Taylor","step":"Marketing Approval","version":"3","pub":"","adType":"","broker":"ASSIR Corporate","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-08T21:27:37.000Z","totalComments":"1","todos":"1"},{"gid":"1213347775643860","name":"Sotheby's | Market Report | Populate Glenwood Springs Section","designer":"Dale","owner":"","step":"Account Manager","version":"15","pub":"","adType":"","broker":"","corpBroker":"","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-04-15T14:37:08.000Z","totalComments":"0","todos":"0"},{"gid":"1213750194803634","name":"Sotheby's | Convert reel into video sized for CTV","designer":"Zuks","owner":"Anna Taylor","step":"Step 1000","version":"2","pub":"","adType":"","broker":"","corpBroker":"Company Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-03-26T19:14:42.000Z","totalComments":"0","todos":"0"},{"gid":"1213823099296421","name":"James Stewart Aspen Daily News 1/2 Page Horizontal","designer":"Dale","owner":"Charlene Willson","step":"QA","version":"3","pub":"Aspen Daily News","adType":"Brand Selling","broker":"","corpBroker":"Broker Ad","status":"👁️ In PageProof/ Creative Review","proofCreated":"2026-03-27T17:45:10.000Z","totalComments":"0","todos":"0"},{"gid":"1213813972457948","name":"Sotheby's | Nearly four decades in Aspen - Larry Jones","designer":"Dale","owner":"Cathleen Mostert","step":"Account manager review","version":"","pub":"","adType":"","broker":"","corpBroker":"","status":"👁️ In PageProof/ Creative Review","proofCreated":"","totalComments":"","todos":""}];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let TASKS = [];
+let selectedGID = null;
+let selectedRole = null;
+let checkedItems = {};
+let submissions = {};
+let statFilter = 'all';
+let dataSource = 'hardcoded';
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function allCredentialsSaved() {
+  return !!(localStorage.getItem('wdr_asana_pat') &&
+            localStorage.getItem('wdr_pat') &&
+            localStorage.getItem('wdr_sheets_url'));
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  submissions = JSON.parse(localStorage.getItem('wdr_subs') || '{}');
+  localStorage.removeItem('wdr_pat_skipped'); // no longer valid — skip is removed
+
+  loadTasks(HARDCODED_TASKS, 'hardcoded');
+  updatePendingBadge();
+
+  if (!allCredentialsSaved()) {
+    // Pre-fill any partially saved values so returning users don't re-enter everything
+    const ai = document.getElementById('asanaPatInput');
+    const at = document.getElementById('patInput');
+    const sh = document.getElementById('sheetsUrlInput');
+    if (ai) ai.value = localStorage.getItem('wdr_asana_pat') || '';
+    if (at) at.value = localStorage.getItem('wdr_pat') || '';
+    if (sh) sh.value = localStorage.getItem('wdr_sheets_url') || '';
+    document.getElementById('patModal').classList.remove('hidden');
+  } else {
+    await refreshData();
+  }
+});
+
+function loadTasks(raw, source) {
+  TASKS = raw.map(t => ({ ...t, _dl: computeDeadlines(t) }));
+  dataSource = source;
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+// ASANA DIRECT FETCH
+// ═══════════════════════════════════════════════
+async function fetchFromAsana(asanaPat) {
+  const optFields = [
+    'gid','name','completed',
+    `custom_fields.gid`,
+    `custom_fields.name`,
+    `custom_fields.enum_value`,
+    `custom_fields.multi_enum_values`,
+    `custom_fields.display_value`,
+  ].join(',');
+
+  let tasks = [];
+  let offset = null;
+
+  // Paginate through all incomplete tasks in the project
+  do {
+    let url = `https://app.asana.com/api/1.0/tasks?project=${ASANA_PROJECT_GID}&completed_since=now&opt_fields=${encodeURIComponent(optFields)}&limit=100`;
+    if (offset) url += `&offset=${encodeURIComponent(offset)}`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${asanaPat}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Asana API error ${res.status}: ${JSON.stringify(err)}`);
+    }
+    const data = await res.json();
+    tasks = tasks.concat(data.data || []);
+    offset = data.next_page ? data.next_page.offset : null;
+  } while (offset);
+
+  // Map Asana tasks → dashboard task format
+  function cfVal(task, gid) {
+    const cf = (task.custom_fields || []).find(c => c.gid === gid);
+    if (!cf) return '';
+    if (cf.enum_value) return cf.enum_value.name || '';
+    if (cf.multi_enum_values && cf.multi_enum_values.length)
+      return cf.multi_enum_values.map(v => v.name).join(', ');
+    return cf.display_value || '';
+  }
+
+  return tasks.map(t => {
+    const rawDesigner = cfVal(t, ASANA_CF_DESIGNER);
+    const rawStatus   = cfVal(t, ASANA_CF_STATUS);
+    const rawOwner    = cfVal(t, ASANA_CF_OWNER);
+
+    // Clean up "Assigned: Dale" → "Dale"
+    const designer = rawDesigner.replace(/^Assigned:\s*/i, '').trim();
+
+    // Map status string to a step name the dashboard understands
+    let step = rawStatus;
+    if (/pageproof/i.test(rawStatus))    step = 'In PageProof';
+    else if (/in progress/i.test(rawStatus)) step = 'In Progress';
+    else if (/not.started/i.test(rawStatus)) step = 'Assigned - Not Started';
+    else if (/brief/i.test(rawStatus))    step = 'Brief pending';
+    else if (/ready.*submit/i.test(rawStatus)) step = 'Ready to submit';
+    else if (/on hold/i.test(rawStatus))  step = 'On hold';
+    else if (/new request/i.test(rawStatus)) step = 'New request';
+    else if (/complete/i.test(rawStatus)) step = 'Complete';
+
+    return {
+      gid: t.gid,
+      name: t.name || '',
+      designer,
+      owner: rawOwner,
+      step,
+      status: rawStatus,
+      version: '',
+      pub: '',
+      adType: '',
+      broker: '',
+      corpBroker: '',
+      proofCreated: '',
+      totalComments: '',
+      todos: '',
+    };
+  });
+}
+
+async function refreshData() {
+  const asanaPat = localStorage.getItem('wdr_asana_pat');
+  const airtablePat = localStorage.getItem('wdr_pat');
+  const btn = document.getElementById('refreshBtn');
+
+  if (!asanaPat) {
+    document.getElementById('patModal').classList.remove('hidden');
+    return;
+  }
+
+  btn.textContent = '↻ Loading...';
+  btn.classList.add('loading');
+
+  try {
+    // ── PRIMARY: Pull directly from Asana ──────────────────────────────────
+    if (asanaPat) {
+      try {
+        const asanaTasks = await fetchFromAsana(asanaPat);
+        if (asanaTasks.length > 0) {
+          loadTasks(asanaTasks, 'asana');
+          const now = new Date();
+          document.getElementById('syncTime').textContent =
+            `Asana · ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+        }
+      } catch(asanaErr) {
+        console.warn('Asana fetch error:', asanaErr);
+        // Show error in header but don't block
+        document.getElementById('syncTime').textContent = 'Asana error — check PAT';
+      }
+    }
+
+    // ── Load submissions (Airtable) if PAT available ────────────────────────
+    if (airtablePat) {
+      await loadSubmissions(airtablePat);
+    }
+
+  } catch(e) {
+    console.warn('Refresh error:', e);
+  }
+
+  btn.textContent = '↻ Refresh';
+  btn.classList.remove('loading');
+  renderAll();
+}
+
+async function loadSubmissions(pat) {
+  try {
+    const res = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE}/${SUBMISSIONS_TABLE}?fields[]=Task+GID&fields[]=Role&fields[]=Submitted+By&fields[]=Submitted+At&fields[]=Proof+Version&fields[]=All+Items+Checked`,
+      { headers: { Authorization: `Bearer ${pat}` } }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const fresh = {};
+    data.records.forEach(rec => {
+      const f = rec.fields;
+      const gid = f['Task GID'];
+      if (!gid) return;
+      if (!fresh[gid]) fresh[gid] = [];
+      fresh[gid].push({ role: f['Role'], submittedBy: f['Submitted By'], submittedAt: f['Submitted At'], version: f['Proof Version'], allChecked: f['All Items Checked'] });
+    });
+    // Merge with local
+    Object.keys(fresh).forEach(gid => { submissions[gid] = fresh[gid]; });
+    localStorage.setItem('wdr_subs', JSON.stringify(submissions));
+  } catch(e) { console.warn('Submissions load error:', e); }
+}
+
+// ═══════════════════════════════════════════════
+// CHECKLIST SECTIONS
+// ═══════════════════════════════════════════════
+const SECTIONS = [
+  // ── All roles: Content Accuracy
+  { letter:'A', title:'Content Accuracy', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'a1', label:'The MLS number is captured correctly and matches the brief in the Asana task.',
+     note:'Open the Asana task brief. Read the MLS number digit by digit against what appears in the ad. They must be identical. Do not tick from memory.'},
+    {id:'a2', label:'The property address is spelled correctly in full.',
+     note:'Open the live MLS listing. Read the street number, street name, suburb, state, and zip code character by character against the ad. Do not rely on previous ads or memory.'},
+    {id:'a3', label:'The listed price is accurate and correctly formatted.',
+     note:'Confirm the price against the brief and the live MLS listing today. Format must be $X,XXX,XXX. No ranges, no approximations, no abbreviations unless the brief explicitly states otherwise.'},
+    {id:'a4', label:'The availability status is current and correct — For Sale / Sold / Under Contract / Off Market.',
+     note:'Check the live MLS listing today, not just the brief. Status can change between brief and review. If the status has changed, flag to the account manager before ticking.'},
+    {id:'a5', label:'All property features are accurate — beds, baths, square footage, acreage, and lot size all match the MLS.',
+     note:'Open the MLS listing. Compare each figure one at a time. Do not estimate or round. If any number differs by even one digit or decimal place, reject and flag.'},
+  ]},
+
+  // ── All roles: Visual Assets
+  { letter:'B', title:'Visual Assets', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'b1', label:'Every image in the ad has been individually opened and confirmed as the correct property — not checked as a group.',
+     note:'Open the MLS listing photos. Compare each image in the ad one at a time, side by side with the MLS. If any image cannot be matched to this specific property, reject.'},
+    {id:'b2', label:'All images are high resolution and will reproduce clearly at the intended output size — no pixelation or softness.',
+     note:'Zoom each image to 100% at its actual output size in the ad. If any image appears soft, blurry, or pixelated at that size — not thumbnail size — reject and request a higher-resolution file.'},
+    {id:'b3', label:'The correct agent headshot is in use.',
+     note:'Open the approved headshot library — not social media or Google Images. Confirm the headshot matches the approved file for this specific agent. If the agent has multiple headshots on file, confirm with the account manager which is current.'},
+    {id:'b4', label:'All video footage shows the exact property — every clip has been watched in full.',
+     note:'Watch every video clip from start to finish. Confirm each clip shows only this property. A clip that begins correctly but cuts to another property is a reject. Tick only after watching all footage completely.', conditional:'video'},
+    {id:'b5', label:'If there is an agent logo, it is high resolution and fully legible.',
+     note:'Zoom to 200% on the agent logo. If any part appears blurry, pixelated, or unclear at that zoom level, reject and request a higher-resolution file from the client.'},
+  ]},
+
+  // ── All roles: Brand & Logo Compliance
+  { letter:'C', title:'Brand & Logo Compliance', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'c1', label:"The Sotheby's International Realty logo is the correct version, the correct color, and is placed correctly.",
+     note:"Compare against the approved logo file in the WDR asset library. Confirm: correct version (not an outdated file), correct color, not redrawn, not stretched, not recolored. Do not approve any modified version of the SIR logo under any circumstances."},
+    {id:'c2', label:'The clear space around the logo matches the approved lockup specification — nothing encroaches on it from any side.',
+     note:"Measure the clear space on all four sides of the SIR logo. Minimum clear space equals the height of the 'S' in the SIR wordmark. No text, image, or element may enter this zone. If anything does, reject."},
+    {id:'c3', label:"If there is an agent or company logo, it is smaller than the Sotheby's International Realty logo.",
+     note:"Compare the visual size of both logos. The agent or company logo must be clearly smaller than the SIR logo — not equal in size, not larger. If it appears the same size or larger, reject."},
+    {id:'c4', label:"Ad colors match the approved Sotheby's brand hex codes exactly — no substitutions.",
+     note:"Use the eyedropper or color picker tool to sample each brand color in the ad. Compare the hex value against the approved Sotheby's palette. If any hex code differs, even slightly, reject."},
+    {id:'c5', label:'Only approved brand fonts are used throughout the ad — including body copy, addresses, and disclaimers.',
+     note:'Check every text layer in the ad against the approved brand font list. If any unapproved or substituted font is present anywhere — including fine print — reject. System fonts are never acceptable.'},
+  ]},
+
+  // ── All roles: Agent & Company Details
+  { letter:'D', title:'Agent & Company Details', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'d1', label:'The agent name is spelled correctly.',
+     note:"Open the Sotheby's website or the approved agent profile. Read the agent's name character by character against the ad. Do not rely on previous ads or memory. Confirm with the account manager if in any doubt."},
+    {id:'d2', label:"The agent telephone number is correct and matches the agent's current listing on the Sotheby's website.",
+     note:"Open the agent's current profile on the Sotheby's website right now. Read each digit of the phone number against the ad individually. If any digit or the format differs, reject."},
+    {id:'d3', label:'The agent email address ends in @SIR.com — and no other email domain appears anywhere in the ad.',
+     note:'Read the email address character by character. Confirm the domain is exactly @SIR.com. Then scan the entire ad for any other email address or domain. If any non-SIR.com email appears anywhere in the ad, reject.'},
+    {id:'d4', label:'The company name is used correctly throughout the ad.',
+     note:"Check every instance of the company name against the approved full name (e.g. 'Aspen Snowmass Sotheby\\'s International Realty'). No abbreviations unless explicitly approved. If any instance differs, reject."},
+  ]},
+
+  // ── All roles: Copy & Language
+  { letter:'E', title:'Copy & Language', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'e1', label:'Every word and letter on the ad has been spell-checked — no typos anywhere, including headlines, addresses, and disclaimers.',
+     note:'Read every piece of text on the ad word by word — do not skim. Include headlines, body copy, agent details, addresses, URLs, and all disclaimer text. If any word is in doubt, check a dictionary or ask before ticking.'},
+    {id:'e2', label:'Grammar and punctuation are correct throughout.',
+     note:"Read all copy for grammatical correctness. Pay specific attention to apostrophes in 'Sotheby\\'s', possessives, and sentence structure. If anything reads ambiguously or incorrectly, flag it — do not approve uncertain copy."},
+    {id:'e3', label:'The copy does not repeat any amenities or property features.',
+     note:'Read the full copy from start to finish. Note each amenity or feature as you go. If any item appears more than once, flag it to the designer before ticking.'},
+    {id:'e4', label:"The copy meets all Sotheby's brand language requirements — no forbidden terms are used.",
+     note:"Check against the Sotheby's brand language guidelines. Terms such as 'luxury', 'exclusive', and 'world class' require written approval before use. If any unapproved brand term is present, reject."},
+  ]},
+
+  // ── All roles: Digital & Interactive
+  { letter:'F', title:'Digital & Interactive', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'f1', label:'The website URL capitalizes each word correctly, has been clicked and tested live right now, and leads to the correct destination. If the site is down, the agent has been alerted.',
+     note:'Click or type the URL right now. Confirm: (1) it opens without error, (2) it loads the correct property or page, (3) each word in the URL is capitalized as required. If the site is down or misdirected, alert the agent before ticking this item.'},
+    {id:'f2', label:'The QR code (where present) has been scanned on two devices from the final proof file and goes to the correct destination.',
+     note:'Scan the QR code from the final proof file — not the working file — on two separate devices. Confirm it reaches the exact intended destination on both. Do not scan from a screen reflection or low-quality preview. If it fails or misdirects, reject.'},
+  ]},
+
+  // ── Designer only: Technical & Production
+  { letter:'G', title:'Technical & Production', roles:['Designer'], items:[
+    {id:'g1', label:'The ad dimensions are correct for the intended publication.',
+     note:'Check the document size against the publication spec sheet. Width, height, and orientation must match exactly. If the spec sheet is not available, confirm with the account manager before proceeding.'},
+    {id:'g2', label:'The color profile is correct — CMYK for print ads, RGB or sRGB for digital ads.',
+     note:'Check Document Setup or Color Mode in the design application. Print must be CMYK. Digital must be RGB or sRGB. Exporting in the wrong profile causes visible color shifts in print. Fix before exporting if incorrect.'},
+    {id:'g3', label:'Bleed is set to 0.125" on all sides and no critical content sits outside the safe zone.',
+     note:'Check bleed settings in Document Setup. Confirm 0.125" on all sides. Zoom to each edge and confirm no logos, text, or critical elements sit outside the safe zone margin. If anything critical is at risk of being trimmed, adjust before ticking.', conditional:'print'},
+    {id:'g4', label:"File format and resolution meet the publication's requirements.",
+     note:'Check the publication spec sheet for required format (PDF, JPEG, TIFF, etc.) and minimum resolution (typically 300dpi for print). Confirm both before exporting. If uncertain, contact the publication directly.'},
+    {id:'g5', label:'There is sufficient negative space throughout the ad — it does not feel crowded or uncomfortable.',
+     note:'Step back from the screen and view the ad at 50% zoom. If any area feels congested, cramped, or hard to read, flag it to the account manager before ticking.'},
+    {id:'g6', label:'All fonts are embedded or outlined in the exported file.',
+     note:'Run a preflight check in Acrobat or the design application on the exported file. Zero font errors must be reported. If fonts are not embedded or outlined, the publication may substitute them with incorrect system fonts. Fix before ticking.'},
+  ]},
+
+  // ── All roles: Legal & Compliance
+  { letter:'H', title:'Legal & Compliance', roles:['Designer','Account Manager','Internal Reviewer'], items:[
+    {id:'h1', label:'All required legal disclaimers are present, correctly worded, and fully legible.',
+     note:'Confirm the following are present and correct: licence or DRE number, Equal Housing Opportunity logo or statement, and any property-specific disclosures. Read the disclaimer text in full — do not assume it is correct because it was used in a previous ad.'},
+    {id:'h2', label:'All images are properly licensed and cleared for commercial use in this ad.',
+     note:'Confirm the source of every image. Stock images must have a valid commercial licence on file. Client-supplied images must have written confirmation they are cleared for commercial advertising use. If any image source is unknown or unconfirmed, reject.'},
+  ]},
+
+  // ── Designer only: Brief Sign-off
+  { letter:'I', title:'Brief Sign-off', roles:['Designer'], items:[
+    {id:'i_brief', label:'The executed design matches the brief in the Asana task — every element, size, and content requirement has been met.',
+     note:'Open the Asana task right now. Read the brief requirement by requirement. Confirm each one is reflected in the design: ad size, content, messaging, imagery, placement, and any special instructions. Tick only after completing this comparison line by line — not from memory.'},
+  ]},
+
+  // ── Account Manager only: Final Process Check
+  { letter:'J', title:'Account Manager Final Check', roles:['Account Manager'], items:[
+    {id:'i1', label:'The client has been sent the PageProof link and has confirmed they can open and access the proof — not just that it was sent.',
+     note:'Confirm you have received explicit confirmation from the client that they opened and accessed the proof. A delivery receipt or sent notification is not confirmation of access. If not confirmed, do not tick.'},
+    {id:'i2', label:'All comments and change requests from the previous proof version have been individually opened in PageProof and verified as actioned.',
+     note:"Open the previous proof version in PageProof right now. Click every comment. Confirm each one has been addressed in the current version. Do not tick based on the designer's assurance alone — verify each comment yourself."},
+    {id:'i3', label:'The publication submission deadline is still achievable — no timing risk exists.',
+     note:"Check today's date against the submission deadline. If there is any risk the deadline cannot be met, escalate to Anna immediately before ticking. Do not approve a proof with a timing risk and flag it afterwards."},
+    {id:'i4', label:'The broker or agent has reviewed and approved this proof in writing.',
+     note:'Confirm you have received written approval from the broker or agent via email, PageProof comment, or message. A verbal confirmation is not sufficient. If written approval has not been received, hold the proof until it is in hand.'},
+  ]},
+];
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// ── Version-aware submission helpers
+// All checklists are per (task GID + proof version).
+// Required per version: 1 Designer, 1 Account Manager. 2nd AM review and Internal Reviewer are optional.
+// External review: no checklist required.
+
+function getVersionKey(gid, version) {
+  return `${gid}_v${version || '1'}`;
+}
+
+function getVersionSubs(gid, version) {
+  // submissions stored under gid; filter by version
+  return (submissions[gid] || []).filter(s => String(s.version || '1') === String(version || '1'));
+}
+
+function getVersionProgress(task) {
+  const ver  = task.version || '1';
+  const subs = getVersionSubs(task.gid, ver);
+  const des  = subs.filter(s => s.role === 'Designer');
+  const am   = subs.filter(s => s.role === 'Account Manager');
+  const ir   = subs.filter(s => s.role === 'Internal Reviewer');
+  return {
+    version:         ver,
+    designer:        des,         // array of submissions
+    am:              am,
+    internal:        ir,
+    designerDone:    des.length  >= 1,
+    amDone:          am.length   >= 1,           // 1 AM required, 2nd is optional
+    isComplete:      des.length  >= 1 && am.length >= 1,
+    nextAMReview:    am.length   === 0 ? 1 : 2,  // 1 = required, 2 = optional
+    secondAMDone:    am.length   >= 2,
+  };
+}
+
+function getAllVersionsSummary(task) {
+  // Returns version keys that have at least one submission
+  const allSubs = submissions[task.gid] || [];
+  const versions = [...new Set(allSubs.map(s => String(s.version || '1')))];
+  return versions.sort((a, b) => parseFloat(a) - parseFloat(b));
+}
+
+function hasCompletedChecklist(task) {
+  // True if the CURRENT version has all required reviews done
+  return getVersionProgress(task).isComplete;
+}
+
+function needsChecklist(task) {
+  if (hasCompletedChecklist(task)) return false;
+  const s = (task.step||'').toLowerCase();
+  return ['account manager','agent','marketing','approver','qa','1000'].some(k => s.includes(k));
+}
+function isVideoTask(t) {
+  return (t.name+t.adType).toLowerCase().match(/video|social|airport|reel|commercial/);
+}
+function isPrintTask(t) {
+  return t.pub && t.pub.length > 0;
+}
+
+// ═══════════════════════════════════════════════
+// FILTER & RENDER
+// ═══════════════════════════════════════════════
+function renderAll() {
+  updateCounts();
+  renderTaskList(getFiltered());
+  if (selectedGID) renderContent();
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  const stepF = (document.getElementById('filterStep').value||'').toLowerCase();
+  const desF = (document.getElementById('filterDes').value||'').toLowerCase();
+
+  return TASKS.filter(t => {
+    const txt = `${t.name} ${t.broker} ${t.pub} ${t.designer} ${t.owner}`.toLowerCase();
+    if (q && !txt.includes(q)) return false;
+    if (stepF && !(t.step||'').toLowerCase().includes(stepF)) return false;
+    if (desF && (t.designer||'').toLowerCase() !== desF) return false;
+    if (statFilter === 'critical' && taskAlertLevel(t) !== 'critical') return false;
+    if (statFilter === 'urgent') {
+      const lvl = taskAlertLevel(t);
+      if (!['critical','high'].includes(lvl)) return false;
+    }
+    if (statFilter === 'done' && !hasCompletedChecklist(t)) return false;
+    return true;
+  });
+}
+
+function filterTasks() { renderTaskList(getFiltered()); }
+
+function setStatFilter(f) {
+  statFilter = f;
+  ['all','crit','urg','done'].forEach(id => document.getElementById('st-'+id).classList.remove('active'));
+  const map = {all:'all',critical:'crit',urgent:'urg',done:'done'};
+  document.getElementById('st-'+(map[f]||'all')).classList.add('active');
+  renderTaskList(getFiltered());
+}
+
+function updateCounts() {
+  let crit=0, urg=0, done=0;
+  TASKS.forEach(t => {
+    const lvl = taskAlertLevel(t);
+    if (lvl==='critical') crit++;
+    if (['critical','high'].includes(lvl)) urg++;
+    if (hasCompletedChecklist(t)) done++;
+  });
+  document.getElementById('cn-all').textContent = TASKS.length;
+  document.getElementById('cn-crit').textContent = crit;
+  document.getElementById('cn-urg').textContent = urg;
+  document.getElementById('cn-done').textContent = done;
+  document.getElementById('taskCount').textContent = `${TASKS.length} tasks`;
+  const alertEl = document.getElementById('alertCount');
+  if (crit > 0) {
+    alertEl.textContent = `${crit} MISSED`;
+    alertEl.style.display = '';
+  } else {
+    alertEl.style.display = 'none';
+  }
+}
+
+function renderTaskList(tasks) {
+  const el = document.getElementById('taskList');
+  if (!tasks.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:12px;font-family:Arial,sans-serif;">No tasks match your filters.</div>`;
+    return;
+  }
+
+  el.innerHTML = tasks.map(t => {
+    const dl = t._dl;
+    const lvl = taskAlertLevel(t);
+    const done = hasCompletedChecklist(t);
+    const isActive = t.gid === selectedGID;
+    const cls = ['task-item', isActive?'active':'', lvl==='critical'?'level-critical':lvl==='high'?'level-high':lvl==='medium'?'level-medium':lvl==='ok'&&!done?'level-ok':''].filter(Boolean).join(' ');
+
+    // Deadline lines for sidebar
+    let dlLines = '';
+    if (dl) {
+      const fields = [
+        {label:'Brief', d: dl.briefing},
+        {label:'Design', d: dl.designer},
+        {label:'PageProof', d: dl.pageproof},
+        {label:'Submit', d: dl.submission},
+      ];
+      const urgentFields = fields.filter(f => ['crit','high'].includes(dlClass(f.d)));
+      if (urgentFields.length) {
+        dlLines = urgentFields.map(f => {
+          const cls2 = dlClass(f.d) === 'crit' ? 'crit' : 'high';
+          return `<span class="${cls2}">${f.label}: ${dlLabel(f.d)}</span>`;
+        }).join(' · ');
+        dlLines = `<div class="ti-dl">${dlLines}</div>`;
+      } else if (dl.submission) {
+        dlLines = `<div class="ti-dl">Submit by ${fmtDate(dl.submission)}</div>`;
+      }
+    }
+
+    // Alert badge
+    let alertBadge = '';
+    if (lvl === 'critical') alertBadge = `<span class="badge b-crit">🚨 MISSED</span>`;
+    else if (lvl === 'high')    alertBadge = `<span class="badge b-high">⚡ URGENT</span>`;
+    else if (lvl === 'medium')  alertBadge = `<span class="badge b-med">⚠ Due Soon</span>`;
+    const checkBadge = done ? `<span class="badge b-check">✓ Checked</span>` : '';
+    const stepBadge = t.step ? `<span class="badge b-step">${escHtml(t.step)}</span>` : '';
+    const desBadge  = t.designer ? `<span class="badge b-des">${escHtml(t.designer)}</span>` : '';
+    const verBadge  = t.version  ? `<span class="badge b-ver">v${escHtml(t.version)}</span>` : '';
+
+    return `<div class="${cls}" onclick="selectTask('${t.gid}')">
+      ${done?'<div class="ti-check">✓</div>':''}
+      <div class="ti-name">${escHtml(t.name)}</div>
+      <div class="ti-badges">${stepBadge}${desBadge}${verBadge}${alertBadge}${checkBadge}</div>
+      ${dlLines}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// TASK SELECT & CONTENT
+// ═══════════════════════════════════════════════
+function selectTask(gid) {
+  selectedGID = gid; selectedRole = null; checkedItems = {};
+  renderTaskList(getFiltered());
+  renderContent();
+}
+
+function renderContent() {
+  const task = TASKS.find(t => t.gid === selectedGID);
+  if (!task) return;
+  const dl = task._dl;
+  const subs = submissions[task.gid] || [];
+  const done = hasCompletedChecklist(task);
+  const lvl = taskAlertLevel(task);
+
+  let html = '';
+
+  // ── Task Header
+  html += `<div class="task-header">
+    <div class="th-pub">${escHtml(task.pub || task.corpBroker || "Sotheby's Aspen")}</div>
+    <div class="th-name">${escHtml(task.name)}</div>
+    <div class="th-meta">
+      ${task.designer ? `<div class="th-m"><label>Designer</label><strong>${escHtml(task.designer)}</strong></div>` : ''}
+      ${task.owner    ? `<div class="th-m"><label>Task Owner</label><strong>${escHtml(task.owner)}</strong></div>` : ''}
+      ${task.version  ? `<div class="th-m"><label>Proof Version</label><strong>v${escHtml(task.version)}</strong></div>` : ''}
+      ${task.broker && task.broker !== 'ASSIR Corporate' ? `<div class="th-m"><label>Broker</label><strong>${escHtml(task.broker)}</strong></div>` : ''}
+      ${task.totalComments ? `<div class="th-m"><label>Comments</label><strong>${escHtml(task.totalComments)}</strong></div>` : ''}
+      ${task.step ? `<div class="th-m"><label>Current Step</label><strong>${escHtml(task.step)}</strong></div>` : ''}
+    </div>`;
+
+  // ── Deadline Grid (WDR-managed dates, not Asana)
+  if (dl) {
+    const states = getDeadlineStates(task);
+    const mkCard = (label, d, state) => {
+      let cls = 'd-'+dlClass(d);
+      let lbl = dlLabel(d);
+      let sub = dlStatus(d, label);
+      if (state && state.confirmed) {
+        cls = 'd-crit';
+        lbl = '⛔ CONFIRMED MISSED';
+        sub = state.reason;
+      }
+      return `<div class="dl-card ${cls}"><label>${label}</label><div class="dl-date">${lbl}</div>${sub?`<div class="dl-status">${sub}</div>`:''}</div>`;
+    };
+    html += `<div class="dl-grid">
+      ${mkCard('📋 Briefing Deadline', dl.briefing, states.briefing)}
+      ${mkCard('🎨 Designer Deadline', dl.designer, states.designer)}
+      ${mkCard('👁️ PageProof Deadline', dl.pageproof, states.pageproof)}
+      ${mkCard('📤 Submission Deadline', dl.submission, states.submission)}
+    </div>
+    <div class="dl-source">Deadlines calculated by WDR rules from task name — not Asana dates. Source: ${escHtml(dl.source)}</div>`;
+  } else {
+    html += `<div class="dl-source" style="font-size:11px;font-family:Arial,sans-serif;color:rgba(255,255,255,0.45);margin-top:8px;">No deadline rule applies to this task type (editorial/video/market report). Deadlines shown are from Asana if set.</div>`;
+  }
+  html += `</div>`;
+
+  // ── Alert banners
+  if (dl) {
+    const states = getDeadlineStates(task);
+    const statesList = [
+      {label:'Briefing deadline',   state: states.briefing},
+      {label:'Designer deadline',   state: states.designer},
+      {label:'PageProof deadline',  state: states.pageproof},
+      {label:'Submission deadline', state: states.submission},
+    ];
+
+    const confirmedMissed = statesList.filter(f => f.state.confirmed);
+    const dateMissedOnly  = statesList.filter(f => !f.state.confirmed && dayDiff(f.state.d) < 0);
+
+    if (confirmedMissed.length) {
+      html += `<div class="banner crit">🚨 <div><strong>${confirmedMissed.length} deadline${confirmedMissed.length>1?'s':''} CONFIRMED missed — action required</strong><br>${confirmedMissed.map(f=>`<span style="font-size:10.5px;display:block;margin-top:3px">⛔ <strong>${f.label}</strong> (${fmtDate(f.state.d)}): ${f.state.reason}</span>`).join('')}</div></div>`;
+    }
+    if (dateMissedOnly.length) {
+      html += `<div class="banner high">⚠️ <div><strong>${dateMissedOnly.length} deadline date${dateMissedOnly.length>1?'s':''} passed</strong> — unable to confirm from task data: ${dateMissedOnly.map(f=>`${f.label} was ${fmtDate(f.state.d)}`).join(' · ')}</div></div>`;
+    }
+
+    const todayFields = statesList.filter(f => { const diff = dayDiff(f.state.d); return diff >= 0 && diff <= 1; });
+    if (todayFields.length) {
+      html += `<div class="banner high">⚡ <div><strong>Deadline today/tomorrow:</strong> ${todayFields.map(f=>f.label).join(', ')}</div></div>`;
+    }
+  }
+
+  if (needsChecklist(task)) {
+    html += `<div class="banner crit">⚠️ <div><strong>Checklist Required</strong> — This task has reached a review stage without a completed checklist. Complete and submit below before moving this proof forward.</div></div>`;
+  }
+
+  if (done) {
+    const latest = subs.filter(s=>s.allChecked).slice(-1)[0];
+    html += `<div class="banner ok">✅ <div><strong>Checklist completed</strong><br><span style="font-size:10px">By ${escHtml(latest.submittedBy||'—')} · ${latest.role||''} · ${latest.submittedAt ? new Date(latest.submittedAt).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'}) : 'unknown time'} · Proof v${latest.version||'—'}</span></div></div>`;
+  }
+
+  // ── Version progress panel
+  const vp = getVersionProgress(task);
+  const allVers = getAllVersionsSummary(task);
+
+  const mkRevPill = (label, done, required) => {
+    const cls = required ? (done ? 'done' : 'needed') : (done ? 'done optional' : 'optional');
+    const icon = done ? '✓' : required ? '✗' : '○';
+    return `<span class="rev-pill ${cls}">${icon} ${label}</span>`;
+  };
+
+  let verHistHtml = '';
+  if (allVers.length > 1) {
+    const olderVers = allVers.filter(v => v !== vp.version);
+    verHistHtml = `<div class="ver-hist">` + olderVers.map(v => {
+      const subs = getVersionSubs(task.gid, v);
+      return subs.map(s =>
+        `<div class="ver-hist-row">v${v} · <span class="who">${escHtml(s.submittedBy)}</span> · ${s.role} · ${s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</div>`
+      ).join('');
+    }).join('') + `</div>`;
+  }
+
+  html += `<div class="ver-progress">
+    <h3>Checklist Progress — Version ${escHtml(vp.version)}</h3>
+    <div class="ver-row">
+      ${mkRevPill('Designer', vp.designerDone, true)}
+      ${mkRevPill('Account Manager', vp.amDone, true)}
+      ${mkRevPill('2nd AM Review', vp.secondAMDone, false)}
+      ${vp.internal.length > 0 ? mkRevPill(`Internal (${vp.internal.length})`, true, false) : mkRevPill('Internal Reviewer', false, false)}
+    </div>
+    ${vp.isComplete ? `<div style="font-size:11px;font-family:Arial,sans-serif;color:var(--success);margin-top:6px;font-weight:600;">✅ All required reviews complete for v${escHtml(vp.version)}</div>` : ''}
+    ${verHistHtml}
+  </div>`;
+
+  // ── Role selector
+  const amLabel = vp.am.length === 0 ? 'Account Manager — Review 1 (Required)'
+               : vp.am.length === 1 ? 'Account Manager — Review 2 (Optional)'
+               : 'Account Manager — Reviews Complete';
+  const amComplete = vp.amDone;
+  const desComplete = vp.designerDone;
+
+  html += `<div class="card"><h3>Select your role to begin</h3>
+    <div class="role-btns">
+      <div class="role-btn ${selectedRole==='Designer'?'active':''} ${desComplete?'complete':''}" onclick="setRole('Designer')">
+        <span class="ri">🎨</span><span class="rl">Designer</span>
+        <span class="rd">Preparing / uploading the proof</span>
+        <div class="rp">${desComplete ? '<span class="r-done">✓ Done for v'+escHtml(vp.version)+'</span>' : '<span class="r-need">Required · not yet done</span>'}</div>
+      </div>
+      <div class="role-btn ${selectedRole==='Account Manager'?'active':''} ${amComplete?'complete':''}" onclick="setRole('Account Manager')">
+        <span class="ri">👔</span><span class="rl">Account Manager</span>
+        <span class="rd">${escHtml(amLabel)}</span>
+        <div class="rp">${vp.secondAMDone ? '<span class="r-done">✓ Both AM reviews done for v'+escHtml(vp.version)+'</span>' : vp.amDone ? '<span class="r-done">✓ Required review done</span> <span class="r-opt">· 2nd optional</span>' : '<span class="r-need">Required · not yet done</span>'}</div>
+      </div>
+      <div class="role-btn ${selectedRole==='Internal Reviewer'?'active':''} ${vp.internal.length>0?'complete':''}" onclick="setRole('Internal Reviewer')">
+        <span class="ri">🔍</span><span class="rl">Internal Reviewer</span>
+        <span class="rd">Optional internal sign-off</span>
+        <div class="rp">${vp.internal.length > 0 ? '<span class="r-done">'+vp.internal.length+' internal review(s) done</span>' : '<span class="r-opt">Optional — not required</span>'}</div>
+      </div>
+    </div></div>`;
+
+  if (selectedRole) {
+    const visItems = getVisibleItems(selectedRole, task);
+    const checked = visItems.filter(i => checkedItems[i.id]).length;
+    const pct = visItems.length > 0 ? Math.round(checked/visItems.length*100) : 0;
+
+    html += `<div class="prog-card">
+      <div class="prog-label"><span>Checklist progress</span><strong>${checked} / ${visItems.length} items</strong></div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:${pct}%"></div></div>
+    </div>`;
+
+    html += `<div class="cl-card">`;
+    SECTIONS.forEach(sec => {
+      if (!sec.roles.includes(selectedRole)) return;
+      const secItems = sec.items.filter(i => {
+        if (i.conditional==='video') return isVideoTask(task);
+        if (i.conditional==='print') return isPrintTask(task);
+        return true;
+      });
+      if (!secItems.length) return;
+      const secChecked = secItems.filter(i=>checkedItems[i.id]).length;
+      const secDone = secChecked===secItems.length;
+
+      html += `<div class="cl-sec-title">${escHtml(sec.title)}</div>`;
+      html += `<div class="cl-items">`;
+      secItems.forEach((item,idx) => {
+        const on = checkedItems[item.id];
+        html += `<div class="cl-item ${on?'checked':''}" onclick="toggleItem('${item.id}')" id="cli_${item.id}">
+          <span class="cl-num">${idx+1}</span>
+          <div class="cl-box"><svg class="cl-tick" width="11" height="9" viewBox="0 0 11 9"><path d="M1 4.5l3 3L10 1" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="cl-txt"><div class="cl-lbl">${escHtml(item.label)}</div>${item.note?`<div class="cl-note">${escHtml(item.note)}</div>`:''}</div>
+        </div>`;
+      });
+      html += `</div><div class="sec-div"></div>`;
+    });
+    html += `</div>`;
+
+    // ── Comment Resolution Log
+    const roleLabel = selectedRole === 'Designer' ? 'your own notes and changes made' :
+                      selectedRole === 'Internal Reviewer' ? 'your review observations' :
+                      'all comments from this proof version';
+    html += `<div class="comment-log">
+      <h3>📋 Comment Log — v${escHtml(task.version || '1')} · ${escHtml(selectedRole)} <span class="req">— required to submit</span></h3>
+      <div class="cl-instruction">
+        Record <strong>${roleLabel}</strong> on this proof version. Copy and paste each comment exactly as written. If you have no changes or observations on this version, write <strong>No changes</strong>.
+        <br><span style="font-size:10.5px;color:var(--dark-gray);margin-top:5px;display:block">This feeds the WDR error log and cannot be skipped. Your signature below confirms this is a complete and accurate record.</span>
+      </div>
+      <textarea id="commentLogText"
+        placeholder="Copy each comment exactly as written, with ✓ confirmed against each one.\n\nExample:\n• Agent headshot needs updating — ✓ confirmed\n• Price change from $2.4M to $2.6M — ✓ confirmed\n\nOR write: No changes"
+        oninput="updateSubmit()"></textarea>
+      <div class="cl-foot">Every reviewer at every version must complete this. "No changes" is a valid and complete entry.</div>
+    </div>`;
+
+    // Sign-off
+    html += `<div class="signoff">
+      <h3>Binding Acknowledgment &amp; Digital Sign-Off</h3>
+      <div class="ack-text">By typing my full name below and clicking Submit, I confirm I have personally reviewed every item on this checklist and that <strong>all due diligence has been applied</strong>. I am authorising this proof to proceed to the next stage. <strong>This submission is binding and is recorded in the WDR Aspen error log system.</strong> Any errors discovered after this sign-off that were present at the time of review are my professional responsibility.</div>
+      <div class="sig-fields">
+        <div class="fg"><label>Full Name — digital signature *</label><input type="text" id="sigName" placeholder="Type your full name exactly" oninput="updateSubmit()" /></div>
+        <div class="fg"><label>Role</label><input type="text" value="${selectedRole}" readonly style="background:#f9f9f9;color:#888" /></div>
+        <div class="fg"><label>Proof Version Reviewed</label><input type="text" id="sigVer" value="${task.version||''}" placeholder="e.g. 1" /></div>
+        <div class="fg"><label>Notes / Caveats (optional)</label><input type="text" id="sigNotes" placeholder="Any flags or exceptions..." /></div>
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="submitChecklist()" disabled>🔐 Submit Signed Checklist</button>
+      <div class="submit-msg" id="submitMsg">Complete all ${visItems.length} items and enter your full name to submit.</div>
+    </div>`;
+  }
+
+  document.getElementById('contentArea').innerHTML = html;
+  updateSubmit();
+}
+
+// ═══════════════════════════════════════════════
+// CHECKLIST INTERACTION
+// ═══════════════════════════════════════════════
+function setRole(r) { selectedRole = r; checkedItems = {}; renderContent(); }
+
+function getVisibleItems(role, task) {
+  const all = [];
+  SECTIONS.forEach(sec => {
+    if (!sec.roles.includes(role)) return;
+    sec.items.forEach(i => {
+      if (i.conditional==='video' && !isVideoTask(task)) return;
+      if (i.conditional==='print' && !isPrintTask(task)) return;
+      all.push(i);
+    });
+  });
+  return all;
+}
+
+function toggleItem(id) {
+  checkedItems[id] = !checkedItems[id];
+  const el = document.getElementById('cli_'+id);
+  if (el) el.classList.toggle('checked', checkedItems[id]);
+  updateProgress();
+  updateSubmit();
+}
+
+function updateProgress() {
+  if (!selectedRole || !selectedGID) return;
+  const task = TASKS.find(t=>t.gid===selectedGID);
+  if (!task) return;
+  const vis = getVisibleItems(selectedRole, task);
+  const n = vis.filter(i=>checkedItems[i.id]).length;
+  const pct = vis.length ? Math.round(n/vis.length*100) : 0;
+  const pf = document.getElementById('progFill');
+  if (pf) pf.style.width = pct+'%';
+  const pl = document.querySelector('.prog-label strong');
+  if (pl) pl.textContent = `${n} / ${vis.length} items`;
+}
+
+function updateSubmit() {
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('submitMsg');
+  if (!btn || !selectedRole || !selectedGID) return;
+  const task = TASKS.find(t=>t.gid===selectedGID);
+  if (!task) return;
+  const vis = getVisibleItems(selectedRole, task);
+  const allDone = vis.every(i=>checkedItems[i.id]);
+  const nameEl  = document.getElementById('sigName');
+  const logEl   = document.getElementById('commentLogText');
+  const hasName = nameEl && nameEl.value.trim().length >= 3;
+  const hasLog  = logEl  && logEl.value.trim().length  >= 5;
+  btn.disabled = !(allDone && hasName && hasLog);
+  if (msg) {
+    if (!allDone)  msg.textContent = `${vis.length - vis.filter(i=>checkedItems[i.id]).length} checklist items still need to be checked.`;
+    else if (!hasLog)  msg.textContent = 'Complete the Comment Resolution Log above before submitting.';
+    else if (!hasName) msg.textContent = 'Enter your full name above to sign and submit.';
+    else msg.textContent = '';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// COMMENT LOG AUTO-CATEGORIZATION
+// Anna's categories and severity — the reviewer
+// pastes raw comments; this engine decides the rest.
+// ═══════════════════════════════════════════════
+const SEVERITY_ORDER = ['Critical','High','Medium','Low'];
+
+function categorizeComment(line) {
+  const t = line.toLowerCase();
+
+  // ── CATEGORY (first match wins, ordered by specificity)
+  let category;
+  if (t.match(/price|listed at|\$[\d,]|million|m\.?$|cost|sale price|sold price|reduced/))
+    category = 'Price & Financial';
+  else if (t.match(/mls|address|street|suburb|city|state|zip|postcode|lot size|acreage|sq\s?ft|square foot|bedroom|bathroom|bed\b|bath\b|garage|pool|feature/))
+    category = 'Property Details';
+  else if (t.match(/agent name|name spell|first name|last name|headshot|portrait|photo of|agent photo|agent image|phone|mobile|cell|email|contact detail/))
+    category = 'Agent Details';
+  else if (t.match(/logo|sotheby|sir logo|brand mark|clear space|brand colou?r|pantone|cmyk|hex|corporate font|approved font/))
+    category = 'Brand & Logo';
+  else if (t.match(/typo|spell|grammar|punctuat|apostrophe|capitaliz|capitalise|missing word|wrong word|sentence|copy read|copy error|proofread/))
+    category = 'Copy & Spelling';
+  else if (t.match(/wrong image|wrong photo|wrong property|right property|image quality|resolution|pixelat|blurry|blur|soft image|correct photo|image size|wrong photo/))
+    category = 'Visual Assets';
+  else if (t.match(/disclaimer|license|licence|equal housing|legal copy|compliance|fair housing|dre|reg\.|lic\./))
+    category = 'Legal & Compliance';
+  else if (t.match(/url|website|web address|link|qr code|scan|digital ad|banner|online/))
+    category = 'Digital & Interactive';
+  else if (t.match(/dimension|bleed|safe zone|margin|dpi|colour profile|color profile|cmyk|srgb|file format|pdf version|export|resolution setting|print spec/))
+    category = 'Technical & Production';
+  else if (t.match(/layout|spacing|crowd|compress|overlap|align|position|crop|too small|too large|composition|negative space|white space|crowded/))
+    category = 'Layout & Design';
+  else
+    category = 'General';
+
+  // ── SEVERITY
+  let severity;
+  if (t.match(/price|listed at|\$[\d,]|million|wrong property|wrong address|mls|wrong agent|legal|disclaimer|licence|license|equal housing|wrong image|wrong photo/))
+    severity = 'Critical';
+  else if (t.match(/name spell|agent name|phone|mobile|email|bedroom|bathroom|sq\s?ft|acreage|address|street|suburb|url|website|qr code/))
+    severity = 'High';
+  else if (t.match(/logo|sotheby|brand|font|colour|color|headshot|resolution|blurry|dimension|bleed/))
+    severity = 'Medium';
+  else
+    severity = 'Low';
+
+  return { category, severity };
+}
+
+function parseCommentLog(rawLog) {
+  if (!rawLog || !rawLog.trim()) return { structured: '', highestSeverity: 'Low', lines: [] };
+
+  // Split on newlines and bullet-style markers; skip blank lines and v1 no-comment declarations
+  const lines = rawLog
+    .split(/\n/)
+    .map(l => l.replace(/^[\s•\-\*·]+/, '').trim())
+    .filter(l => l.length > 3 && !l.match(/^v1\s*[—-]\s*no previous/i));
+
+  if (!lines.length) return { structured: rawLog, highestSeverity: 'Low', lines: [] };
+
+  const results = lines.map(line => {
+    const { category, severity } = categorizeComment(line);
+    return { line, category, severity };
+  });
+
+  // Find highest severity
+  let highestSeverity = 'Low';
+  for (const s of SEVERITY_ORDER) {
+    if (results.some(r => r.severity === s)) { highestSeverity = s; break; }
+  }
+
+  // Build structured text for Airtable
+  const grouped = {};
+  results.forEach(r => {
+    if (!grouped[r.category]) grouped[r.category] = [];
+    grouped[r.category].push(`  [${r.severity}] ${r.line}`);
+  });
+
+  const structured = Object.entries(grouped)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([cat, items]) => `${cat}:\n${items.join('\n')}`)
+    .join('\n\n');
+
+  return { structured, highestSeverity, lines: results };
+}
+
+// ═══════════════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════════════
+const FLD_MAP = {
+  a1:'A1 MLS Number Correct', a2:'A2 Property Address Correct', a3:'A3 Price Correct',
+  a4:'A4 Availability Status Correct', a5:'A5 Property Features Accurate',
+  b1:'B1 Images Correct Property', b2:'B2 Image Resolution Sufficient', b3:'B3 Headshot Correct Agent',
+  c1:'C1 Sothebys Logo Correct Placement', c2:'C2 Logo Clear Space Respected',
+  c4:'C3 Brand Colors Correct', c5:'C4 Approved Fonts Only',
+  d1:'D1 Agent Name Correct', d2:'D2 Agent Phone Correct',
+  d3:'D3 Agent Email Correct SIR Domain', d4:'D4 Company Name Correct',
+  e1:'E1 Spelling Checked', e2:'E2 Grammar Correct', e3:'E3 No Repeated Amenities',
+  f1:'F1 Website URL Correct', f2:'F2 QR Code Tested',
+  g1:'G1 Correct Ad Dimensions', g2:'G2 Color Profile Correct',
+  g3:'G3 Bleed and Safe Zone Correct', g4:'G4 File Format Correct',
+  h1:'H1 Legal Disclaimer Included', h2:'H2 Image Licensing Cleared',
+  // New items — no individual Airtable field yet; tracked locally and via comment log
+  // b5, c3, g5, g6, i_brief, i4 will be stored in the overall submission record
+};
+
+async function submitChecklist() {
+  const task = TASKS.find(t=>t.gid===selectedGID);
+  if (!task) return;
+  const nameEl = document.getElementById('sigName');
+  const submittedBy = nameEl.value.trim();
+  const version    = (document.getElementById('sigVer')||{}).value || task.version || '';
+  const notes      = (document.getElementById('sigNotes')||{}).value || '';
+  const commentLog = (document.getElementById('commentLogText')||{}).value || '';
+  const { structured: categorizedComments, highestSeverity } = parseCommentLog(commentLog);
+  const now = new Date().toISOString();
+
+  // Determine AM review number for accurate labelling
+  const vp        = getVersionProgress(task);
+  const roleLabel = selectedRole === 'Account Manager'
+    ? `Account Manager — Review ${vp.nextAMReview || (vp.am.length + 1)} of 2`
+    : selectedRole;
+  // Clean role for Airtable singleSelect (must match field options exactly)
+  const roleForAirtable = selectedRole; // "Designer", "Account Manager", or "Internal Reviewer"
+
+  if (!submittedBy) { nameEl.classList.add('err'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Submitting...';
+
+  const fields = { 'Submission ID': `${task.gid}_${roleLabel.replace(/\s+/g,'_')}_${Date.now()}`, 'Task GID': task.gid, 'Task Name': task.name, 'Proof Version': version, 'Submitted By': submittedBy, 'Role': roleForAirtable, 'Submitted At': now, 'Current Step Name': task.step||'', 'All Items Checked': true, 'Digital Signature': submittedBy, 'Notes': notes, 'Comment Resolution Log': commentLog, 'Categorized Comments': categorizedComments, 'Highest Severity': highestSeverity };
+  getVisibleItems(selectedRole, task).forEach(i => { if (FLD_MAP[i.id]) fields[FLD_MAP[i.id]] = !!checkedItems[i.id]; });
+
+  // ── Local save (always first, never fails) ─────────────────────────────
+  if (!submissions[task.gid]) submissions[task.gid] = [];
+  submissions[task.gid].push({role:roleLabel, submittedBy, submittedAt:now, version, allChecked:true, commentLog});
+  localStorage.setItem('wdr_subs', JSON.stringify(submissions));
+
+  // Save full payload to pending queue for retry
+  const pendingId = fields['Submission ID'];
+  addToPendingQueue(pendingId, fields);
+
+  // ── Airtable save ──────────────────────────────────────────────────────
+  const pat = localStorage.getItem('wdr_pat');
+  let airtableOk = false;
+  if (pat) {
+    try {
+      const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${SUBMISSIONS_TABLE}`, {
+        method:'POST', headers:{'Authorization':`Bearer ${pat}`,'Content-Type':'application/json'}, body:JSON.stringify({fields})
+      });
+      airtableOk = res.ok;
+      if (airtableOk) markSynced(pendingId, 'airtable');
+    } catch(e) { console.warn('Airtable save error:', e); }
+  }
+
+  // ── Google Sheets save ────────────────────────────────────────────────
+  const sheetsUrl = localStorage.getItem('wdr_sheets_url');
+  let sheetsOk = false;
+  if (sheetsUrl) {
+    try {
+      const res = await fetch(sheetsUrl, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(fields)
+      });
+      sheetsOk = true; // no-cors means we can't read response, assume ok
+      markSynced(pendingId, 'sheets');
+    } catch(e) { console.warn('Sheets save error:', e); }
+  }
+
+  updatePendingBadge();
+  checkedItems = {}; selectedRole = null;
+  updateCounts(); renderTaskList(getFiltered()); renderContent();
+
+  const syncStatus = [airtableOk && 'Airtable', sheetsOk && 'Sheets'].filter(Boolean).join(' + ') || 'locally only';
+  const s = document.createElement('div');
+  s.className = 'banner ok'; s.style.cssText = 'font-size:13px;padding:16px;';
+  s.innerHTML = `✅ <div><strong>Submitted — saved to ${syncStatus}</strong><br><span style="font-size:11px">By <strong>${escHtml(submittedBy)}</strong> · ${escHtml(roleLabel)} · v${escHtml(version)} · ${new Date().toLocaleString('en-US',{dateStyle:'full',timeStyle:'short'})}</span>${(!airtableOk||!sheetsOk)?'<br><span style="font-size:10px;color:#D97706">Some sync targets unavailable — data saved locally. Use ↻ Sync Pending when ready.</span>':''}</div>`;
+  document.getElementById('contentArea').prepend(s);
+}
+
+// ═══════════════════════════════════════════════
+// PENDING SYNC QUEUE
+// ═══════════════════════════════════════════════
+function getPendingQueue() {
+  return JSON.parse(localStorage.getItem('wdr_pending_syncs') || '[]');
+}
+function addToPendingQueue(id, fields) {
+  const q = getPendingQueue();
+  if (!q.find(e => e.id === id)) {
+    q.push({ id, fields, airtableSynced: false, sheetsSynced: false, queuedAt: new Date().toISOString() });
+    localStorage.setItem('wdr_pending_syncs', JSON.stringify(q));
+  }
+}
+function markSynced(id, target) {
+  const q = getPendingQueue();
+  const entry = q.find(e => e.id === id);
+  if (entry) {
+    if (target === 'airtable') entry.airtableSynced = true;
+    if (target === 'sheets')   entry.sheetsSynced   = true;
+    localStorage.setItem('wdr_pending_syncs', JSON.stringify(q));
+  }
+}
+function updatePendingBadge() {
+  const q = getPendingQueue();
+  const pat = localStorage.getItem('wdr_pat');
+  const sheetsUrl = localStorage.getItem('wdr_sheets_url');
+  const unsynced = q.filter(e =>
+    (pat && !e.airtableSynced) || (sheetsUrl && !e.sheetsSynced)
+  ).length;
+  const badge = document.getElementById('pendingBadge');
+  if (badge) {
+    if (unsynced > 0) {
+      badge.textContent = `${unsynced} unsynced`;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+async function syncPending() {
+  const q = getPendingQueue();
+  const pat = localStorage.getItem('wdr_pat');
+  const sheetsUrl = localStorage.getItem('wdr_sheets_url');
+  if (!pat && !sheetsUrl) { alert('Add Airtable or Google Sheets credentials in Settings first.'); return; }
+
+  const btn = document.getElementById('pendingBadge');
+  if (btn) btn.textContent = '⏳ Syncing...';
+
+  let synced = 0, failed = 0;
+  for (const entry of q) {
+    const needsAirtable = pat && !entry.airtableSynced;
+    const needsSheets   = sheetsUrl && !entry.sheetsSynced;
+    if (!needsAirtable && !needsSheets) continue;
+
+    if (needsAirtable) {
+      try {
+        const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${SUBMISSIONS_TABLE}`, {
+          method:'POST', headers:{'Authorization':`Bearer ${pat}`,'Content-Type':'application/json'},
+          body: JSON.stringify({ fields: entry.fields })
+        });
+        if (res.ok) { markSynced(entry.id, 'airtable'); synced++; }
+        else failed++;
+      } catch(e) { failed++; }
+    }
+    if (needsSheets) {
+      try {
+        await fetch(sheetsUrl, {
+          method:'POST', mode:'no-cors',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(entry.fields)
+        });
+        markSynced(entry.id, 'sheets'); synced++;
+      } catch(e) { failed++; }
+    }
+  }
+
+  updatePendingBadge();
+  alert(`Sync complete. ${synced} submission${synced!==1?'s':''} synced.${failed>0?' '+failed+' failed — check credentials.':''}`);
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════
+async function handleExport() {
+  const btn = document.getElementById('exportBtn');
+  if (btn) { btn.classList.add('loading'); btn.textContent = '⏳ Exporting…'; }
+  try { await exportCSV(); }
+  finally { if (btn) { btn.classList.remove('loading'); btn.textContent = '⬇ Export'; } }
+}
+
+async function exportCSV() {
+  const pat = localStorage.getItem('wdr_pat');
+  const allSubs = [];
+
+  // ── Try Airtable first (includes all team members' submissions) ──────────
+  if (pat) {
+    try {
+      let url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${SUBMISSIONS_TABLE}`;
+      const airtableFields = [
+        'Task GID','Task Name','Role','Submitted By','Submitted At',
+        'Proof Version','All Items Checked','Comment Resolution Log',
+        'Categorized Comments','Highest Severity','Current Step Name',
+        'Digital Signature','Notes','Submission ID'
+      ];
+      const params = airtableFields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&');
+      let offset = null;
+      do {
+        const pageUrl = url + '?' + params + (offset ? '&offset=' + offset : '');
+        const res = await fetch(pageUrl, { headers: { Authorization: `Bearer ${pat}` } });
+        if (!res.ok) { console.warn('Airtable fetch error', res.status); break; }
+        const data = await res.json();
+        data.records.forEach(rec => allSubs.push(rec.fields));
+        offset = data.offset || null;
+      } while (offset);
+    } catch(e) { console.warn('Airtable export error:', e); }
+  }
+
+  // ── Fall back to local pending queue + localStorage ──────────────────────
+  if (allSubs.length === 0) {
+    const q = getPendingQueue();
+    q.forEach(e => allSubs.push(e.fields));
+  }
+  if (allSubs.length === 0) {
+    const subs = JSON.parse(localStorage.getItem('wdr_subs') || '{}');
+    Object.entries(subs).forEach(([gid, arr]) => {
+      arr.forEach(s => allSubs.push({
+        'Task GID': gid, 'Role': s.role, 'Submitted By': s.submittedBy,
+        'Submitted At': s.submittedAt, 'Proof Version': s.version,
+        'All Items Checked': s.allChecked, 'Comment Resolution Log': s.commentLog || ''
+      }));
+    });
+  }
+
+  if (allSubs.length === 0) {
+    alert(pat
+      ? 'No submissions found in Airtable or local storage.'
+      : 'No submissions found.\n\nNote: the export only shows your own browser\'s submissions unless you connect Airtable in Settings. Add your Airtable token to see everyone\'s submissions.');
+    return;
+  }
+
+  // ── Sort by Submitted At descending ─────────────────────────────────────
+  allSubs.sort((a, b) => {
+    const da = a['Submitted At'] || '', db = b['Submitted At'] || '';
+    return db.localeCompare(da);
+  });
+
+  // ── Build CSV ────────────────────────────────────────────────────────────
+  const preferredOrder = [
+    'Submitted At','Submitted By','Role','Task Name','Task GID','Proof Version',
+    'All Items Checked','Highest Severity','Comment Resolution Log',
+    'Categorized Comments','Current Step Name','Digital Signature','Notes','Submission ID'
+  ];
+  const allKeys = [...new Set(allSubs.flatMap(r => Object.keys(r)))];
+  const headers = [
+    ...preferredOrder.filter(k => allKeys.includes(k)),
+    ...allKeys.filter(k => !preferredOrder.includes(k))
+  ];
+  const escape = v => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const rows = [headers.map(escape).join(',')];
+  allSubs.forEach(r => rows.push(headers.map(h => escape(r[h])).join(',')));
+
+  const source = pat ? 'airtable' : 'local';
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `wdr_checklist_submissions_${source}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function showSheetsScript() {
+  document.getElementById('sheetsScriptModal').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════
+// PAT / SETTINGS
+// ═══════════════════════════════════════════════
+function clearFieldError(inputEl, msgId) {
+  inputEl.classList.remove('field-error');
+  document.getElementById(msgId).classList.remove('visible');
+}
+function showFieldError(inputEl, msgId) {
+  inputEl.classList.add('field-error');
+  document.getElementById(msgId).classList.add('visible');
+  inputEl.focus();
+}
+
+function savePAT() {
+  const asanaEl   = document.getElementById('asanaPatInput');
+  const airtableEl = document.getElementById('patInput');
+  const sheetsEl   = document.getElementById('sheetsUrlInput');
+
+  const asanaV    = (asanaEl.value || '').trim();
+  const airtableV = (airtableEl.value || '').trim();
+  const sheetsV   = (sheetsEl.value || '').trim();
+
+  // Clear previous errors
+  clearFieldError(asanaEl, 'asanaErr');
+  clearFieldError(airtableEl, 'airtableErr');
+  clearFieldError(sheetsEl, 'sheetsErr');
+
+  // Validate all three — show all errors at once
+  let hasError = false;
+  if (!asanaV) { showFieldError(asanaEl, 'asanaErr'); hasError = true; }
+  if (!airtableV) { showFieldError(airtableEl, 'airtableErr'); hasError = true; }
+  if (!sheetsV || !sheetsV.startsWith('https://')) { showFieldError(sheetsEl, 'sheetsErr'); hasError = true; }
+  if (hasError) return;
+
+  localStorage.setItem('wdr_asana_pat', asanaV);
+  localStorage.setItem('wdr_pat', airtableV);
+  localStorage.setItem('wdr_sheets_url', sheetsV);
+  localStorage.removeItem('wdr_pat_skipped');
+  document.getElementById('patModal').classList.add('hidden');
+  updatePendingBadge();
+  refreshData();
+}
+
+function openSettings() {
+  const modal = document.getElementById('patModal');
+  document.getElementById('asanaPatInput').value = localStorage.getItem('wdr_asana_pat') || '';
+  document.getElementById('patInput').value       = localStorage.getItem('wdr_pat') || '';
+  document.getElementById('sheetsUrlInput').value = localStorage.getItem('wdr_sheets_url') || '';
+  // Clear any previous errors
+  ['asanaPatInput','patInput','sheetsUrlInput'].forEach(id => {
+    document.getElementById(id).classList.remove('field-error');
+  });
+  ['asanaErr','airtableErr','sheetsErr'].forEach(id => {
+    document.getElementById(id).classList.remove('visible');
+  });
+  modal.classList.remove('hidden');
+}
+</script>
+</body>
+</html>

@@ -1505,7 +1505,7 @@ async function submitChecklist() {
   let sheetsOk = false;
   if (sheetsUrl) {
     try {
-      const res = await fetch(sheetsUrl, {
+      await fetch(sheetsUrl, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(fields)
@@ -1515,14 +1515,52 @@ async function submitChecklist() {
     } catch(e) { console.warn('Sheets save error:', e); }
   }
 
+  // ── Asana comment ─────────────────────────────────────────────────────
+  const asanaPat = localStorage.getItem('wdr_asana_pat');
+  let asanaOk = false;
+  if (asanaPat && task.gid) {
+    try {
+      const severityEmoji = { Critical:'🔴', High:'🟠', Medium:'🟡', Low:'🟢' }[highestSeverity] || '✅';
+      const dateStr = new Date().toLocaleString('en-US', { dateStyle:'full', timeStyle:'short' });
+      let commentLines = [
+        `✅ WDR Checklist Submitted`,
+        ``,
+        `Role: ${roleLabel}`,
+        `Submitted by: ${submittedBy}`,
+        `Proof version: v${version}`,
+        `Date: ${dateStr}`,
+        `Severity: ${severityEmoji} ${highestSeverity || 'None'}`,
+      ];
+      if (notes && notes.trim()) {
+        commentLines.push(``, `Notes:`, notes.trim());
+      }
+      if (commentLog && commentLog.trim()) {
+        commentLines.push(``, `Comment resolution log:`, commentLog.trim());
+      }
+      const commentText = commentLines.join('\n');
+      const asanaRes = await fetch(`https://app.asana.com/api/1.0/tasks/${task.gid}/stories`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${asanaPat}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { text: commentText } })
+      });
+      asanaOk = asanaRes.ok;
+    } catch(e) { console.warn('Asana comment error:', e); }
+  }
+
   updatePendingBadge();
   checkedItems = {}; selectedRole = null;
   updateCounts(); renderTaskList(getFiltered()); renderContent();
 
-  const syncStatus = [airtableOk && 'Airtable', sheetsOk && 'Sheets'].filter(Boolean).join(' + ') || 'locally only';
+  const syncStatus = [
+    airtableOk && 'Airtable',
+    sheetsOk   && 'Sheets',
+    asanaOk    && 'Asana'
+  ].filter(Boolean).join(' + ') || 'locally only';
+
+  const allOk = airtableOk && sheetsOk && asanaOk;
   const s = document.createElement('div');
   s.className = 'banner ok'; s.style.cssText = 'font-size:13px;padding:16px;';
-  s.innerHTML = `✅ <div><strong>Submitted — saved to ${syncStatus}</strong><br><span style="font-size:11px">By <strong>${escHtml(submittedBy)}</strong> · ${escHtml(roleLabel)} · v${escHtml(version)} · ${new Date().toLocaleString('en-US',{dateStyle:'full',timeStyle:'short'})}</span>${(!airtableOk||!sheetsOk)?'<br><span style="font-size:10px;color:#D97706">Some sync targets unavailable — data saved locally. Use ↻ Sync Pending when ready.</span>':''}</div>`;
+  s.innerHTML = `✅ <div><strong>Submitted — saved to ${syncStatus}</strong><br><span style="font-size:11px">By <strong>${escHtml(submittedBy)}</strong> · ${escHtml(roleLabel)} · v${escHtml(version)} · ${new Date().toLocaleString('en-US',{dateStyle:'full',timeStyle:'short'})}</span>${!allOk ? '<br><span style="font-size:10px;color:#D97706">Some sync targets unavailable — data saved locally. Use ↻ Sync Pending when ready.</span>' : ''}</div>`;
   document.getElementById('contentArea').prepend(s);
 }
 

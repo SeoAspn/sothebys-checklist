@@ -411,7 +411,7 @@ const AIRTABLE_SUBMISSION_FIELDS = [
   'Submission ID','Task GID','Task Name','Proof Version','Submitted By','Role',
   'Submitted At','Current Step Name','All Items Checked','Digital Signature',
   'Notes','Comment Resolution Log','Categorized Comments','Highest Severity',
-  'Items Confirmed'
+  'Items Confirmed','Client Comments'
 ];
 
 // Asana — Sotheby's Company | Client Board
@@ -1310,6 +1310,19 @@ function renderContent() {
       <div class="cl-foot">Every reviewer at every version must complete this. "No changes" is a valid and complete entry.</div>
     </div>`;
 
+    // ── Client Comments (Account Manager only)
+    if (selectedRole === 'Account Manager') {
+      html += `<div class="comment-log">
+        <h3>💬 Client Comments — v${escHtml(task.version || '1')}</h3>
+        <div class="cl-instruction">
+          Record <strong>client comments from this version or the previous version</strong>. Copy and paste each client comment exactly as written. If the client gave no comments, write <strong>No client comments</strong>.
+        </div>
+        <textarea id="clientCommentsText"
+          placeholder="Client comments from this version or the previous version.\n\nExample:\n• Client asked to swap the hero image — v2\n• Client approved price change to $2.6M — v3\n\nOR write: No client comments"></textarea>
+        <div class="cl-foot">Saved with your submission to the WDR error log alongside the comment resolution log.</div>
+      </div>`;
+    }
+
     // Sign-off
     html += `<div class="signoff">
       <h3>Binding Acknowledgment &amp; Digital Sign-Off</h3>
@@ -1570,6 +1583,7 @@ async function submitChecklist() {
   const version    = (document.getElementById('sigVer')||{}).value || task.version || '';
   const notes      = (document.getElementById('sigNotes')||{}).value || '';
   const commentLog = (document.getElementById('commentLogText')||{}).value || '';
+  const clientComments = (document.getElementById('clientCommentsText')||{}).value || '';
   const { structured: categorizedComments, highestSeverity } = parseCommentLog(commentLog);
   const now = new Date().toISOString();
 
@@ -1592,7 +1606,7 @@ async function submitChecklist() {
   const confirmedIds = visibleItems.filter(i => checkedItems[i.id]).map(i => i.id);
   const itemsConfirmed = `${confirmedIds.length}/${visibleItems.length} items confirmed: ${confirmedIds.join(', ')}`;
 
-  const fields = { 'Submission ID': `${task.gid}_${roleLabel.replace(/\s+/g,'_')}_${Date.now()}`, 'Task GID': task.gid, 'Task Name': task.name, 'Proof Version': version, 'Submitted By': submittedBy, 'Role': roleForAirtable, 'Submitted At': now, 'Current Step Name': task.step||'', 'All Items Checked': true, 'Digital Signature': submittedBy, 'Notes': notes, 'Comment Resolution Log': commentLog, 'Categorized Comments': categorizedComments, 'Highest Severity': highestSeverity, 'Items Confirmed': itemsConfirmed };
+  const fields = { 'Submission ID': `${task.gid}_${roleLabel.replace(/\s+/g,'_')}_${Date.now()}`, 'Task GID': task.gid, 'Task Name': task.name, 'Proof Version': version, 'Submitted By': submittedBy, 'Role': roleForAirtable, 'Submitted At': now, 'Current Step Name': task.step||'', 'All Items Checked': true, 'Digital Signature': submittedBy, 'Notes': notes, 'Comment Resolution Log': commentLog, 'Categorized Comments': categorizedComments, 'Highest Severity': highestSeverity, 'Items Confirmed': itemsConfirmed, 'Client Comments': clientComments };
   // Per-item answers — included for Google Sheets / local backup only
   visibleItems.forEach(i => { if (FLD_MAP[i.id]) fields[FLD_MAP[i.id]] = !!checkedItems[i.id]; });
 
@@ -1643,6 +1657,9 @@ async function submitChecklist() {
       }
       if (commentLog && commentLog.trim()) {
         commentLines.push(``, `Comment resolution log:`, commentLog.trim());
+      }
+      if (clientComments && clientComments.trim()) {
+        commentLines.push(``, `Client comments (this or previous version):`, clientComments.trim());
       }
       const commentText = commentLines.join('\n');
       const asanaRes = await fetch(`https://app.asana.com/api/1.0/tasks/${task.gid}/stories`, {
